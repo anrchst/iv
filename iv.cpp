@@ -203,10 +203,10 @@ void Window::update()
 void Window::update_file()
 {
 	wclear(file);
-	int firstline = buf.chars.index(buf.start), line = fline;
-	for (buffer::chars_type::const_iterator i = buf.start; i != buf.chars.end(); i++) {
+	int firstline = buf.chars.index(buf.start), line = firstline;
+	for (buffer::chars_type::const_iterator i = buf.start; i != buf.chars.end(); ++i) {
 		wmove(file, line++ - firstline, 0);
-		waddnstr(file, *i, COLS);
+		waddnstr(file, i->c_str(), COLS);
 	}
 	wmove(file, buf.chars.index(buf.cursor) - firstline, buf.cursor_x);
 }

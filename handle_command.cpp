@@ -42,7 +42,7 @@ void handle_command(const std::string &command)
 			throw std::invalid_argument(":cursor needs an argument");
 		if (direction == "left" && buf.cursor_x > 0)
 			buf.cursor_x--;
-		else if (direction == "right" && buf.cursor_x < buf.cursor->second.size() - 1 - (mode == mode_type::NORMAL))
+		else if (direction == "right" && buf.cursor_x < (int)buf.cursor->size() - 1 - (mode == mode_type::NORMAL))
 			buf.cursor_x++;
 		else if (direction == "up" && buf.cursor != buf.chars.begin()) {
 			--buf.cursor;
@@ -78,9 +78,9 @@ void handle_command(const std::string &command)
 		std::string direction;
 		if (args >> direction) {
 			if (direction == "up") {
-				buf.set_start(std::max(0, buf.start->first - LINES + 2));
+				buf.set_start(std::max(0, buf.chars.index(buf.start) - LINES + 2));
 			} else if (direction == "down") {
-				buf.set_start(buf.start->first + LINES - 2);
+				buf.set_start(buf.chars.index(buf.start) + LINES - 2);
 			}
 			win.update_file();
 		}
@@ -88,9 +88,9 @@ void handle_command(const std::string &command)
 		std::string direction;
 		if (args >> direction) {
 			if (direction == "up") {
-				buf.set_start(std::max(0, buf.start->first - LINES / 2 + 1));
+				buf.set_start(std::max(0, buf.chars.index(buf.start) - LINES / 2 + 1));
 			} else if (direction == "down") {
-				buf.set_start(buf.start->first + LINES / 2 - 1);
+				buf.set_start(buf.chars.index(buf.start) + LINES / 2 - 1);
 			}
 			win.update_file();
 		}
@@ -98,14 +98,14 @@ void handle_command(const std::string &command)
 		buf.cursor_x = 0;
 		win.update_file();
 	} else if (arg0 == "n_$") {
-		buf.cursor_x = std::max(0, buf.cursor->size() - 2);
+		buf.cursor_x = std::max(0, (int)buf.cursor->size() - 2);
 		win.update_file();
 	} else if (arg0 == "n_i") {
-		buf.cursor_x = std::min(buf.cursor->size() - 1, buf.cursor_x);
+		buf.cursor_x = std::min((int)buf.cursor->size() - 1, buf.cursor_x);
 		mode = mode_type::INSERT;
 		win.update();
 	} else if (arg0 == "n_a") {
-		buf.cursor_x = std::min(buf.cursor->size() - 1, buf.cursor_x + 1);
+		buf.cursor_x = std::min((int)buf.cursor->size() - 1, buf.cursor_x + 1);
 		mode = mode_type::INSERT;
 		win.update();
 	} else if (arg0 == "n_I") {

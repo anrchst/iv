@@ -235,6 +235,32 @@ public:
 		}
 		return *this;
 	}
+	list_const_iterator &operator --()
+	{
+		if (left()) {
+			*this = left();
+			while (right())
+				*this = right();
+		} else {
+			while (*this == parent().left())
+				*this = parent();
+			*this = parent();
+		}
+		return *this;
+	}
+	list_const_iterator operator ++(int)
+	{
+		auto ret = *this;
+		++*this;
+		return ret;
+	}
+	list_const_iterator operator --(int)
+	{
+		auto ret = *this;
+		--*this;
+		return ret;
+	}
+
 	reference operator *()
 	{
 		return static_cast<const internal::tree<T> *>(this->get())->v;
@@ -266,6 +292,28 @@ public:
 	pointer operator ->()
 	{
 		return const_cast<pointer>(list_const_iterator<T>::operator ->());
+	}
+	list_iterator &operator ++()
+	{
+		list_const_iterator<T>::operator ++();
+		return *this;
+	}
+	list_iterator &operator --()
+	{
+		list_const_iterator<T>::operator --();
+		return *this;
+	}
+	list_iterator operator ++(int)
+	{
+		list_iterator ret = *this;
+		list_const_iterator<T>::operator ++();
+		return ret;
+	}
+	list_iterator operator --(int)
+	{
+		list_iterator ret = *this;
+		list_const_iterator<T>::operator --();
+		return ret;
 	}
 };
 
@@ -365,6 +413,25 @@ public:
 			assert(i.right().parent() == i);
 			check(i.right());
 		}
+	}
+
+	const_iterator upper_bound(int index) const
+	{
+		if (root().size() <= index)
+			return end();
+		const_iterator ret = root();
+		while (ret.left().size() != index) {
+			if (ret.left().size() < index) {
+				index -= ret.left().size() + 1;
+				ret = ret.right();
+			} else
+				ret = ret.left();
+		}
+		return ret;
+	}
+	iterator upper_bound(int index)
+	{
+		return const_cast<const list *>(this)->upper_bound(index);
 	}
 };
 
