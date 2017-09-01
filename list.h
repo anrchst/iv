@@ -2,6 +2,7 @@
 #define IV_LIST_H
 
 #include <algorithm>
+#include <cassert>
 #include <exception>
 #include <iostream>
 #include <iterator>
@@ -24,7 +25,10 @@ struct tree_base
 	tree<T> *l, *r; // left, right
 	tree_base *p; // parent
 
-	tree_base(tree<T> *_l, tree<T> *_r) : l(_l), r(_r) { }
+	tree_base(tree<T> *_l, tree<T> *_r)
+		: l(_l), r(_r)
+	{
+	}
 
 	void resurrect();
 };
@@ -33,7 +37,7 @@ template <class T>
 struct tree_head : public tree_base<T>
 {
 	tree_head(tree<T> *_root = nullptr) : tree_base<T>(_root, nullptr) { }
-	tree<T> *root()
+	tree<T> *root() const
 	{
 		return this->l;
 	}
@@ -44,6 +48,7 @@ struct tree : public tree_base<T>
 {
 	T v; // contained value
 	int h; // height
+	int s; // subtree size
 
 	int height() const
 	{
@@ -53,8 +58,19 @@ struct tree : public tree_base<T>
 			return h;
 	}
 
+	int size() const
+	{
+		if (this == nullptr)
+			return 0;
+		else
+			return s;
+	}
+
 	tree(tree *_l, const T &_v, tree *_r)
-		: tree_base<T>(_l, _r), v(_v), h(std::max(this->l->height(), this->r->height()) + 1)
+		: tree_base<T>(_l, _r),
+		v(_v),
+		h(std::max(this->l->height(), this->r->height()) + 1),
+		s(this->l->size() + 1 + this->r->size())
 	{
 		if (this->l)
 			this->l->p = this;
@@ -62,8 +78,8 @@ struct tree : public tree_base<T>
 			this->r->p = this;
 	}
 
-	tree *add_min(char x);
-	tree *add_max(char x);
+	tree *add_min(const T &x);
+	tree *add_max(const T &x);
 protected:
 	static tree *balance(tree *l, const T &v, tree *r);
 };
@@ -140,7 +156,7 @@ tree<T> *tree<T>::balance(tree<T> *l, const T &v, tree<T> *r)
 }
 
 template <class T>
-tree<T> *tree<T>::add_min(char x)
+tree<T> *tree<T>::add_min(const T &x)
 {
 	if (this == nullptr)
 		return new tree(nullptr, x, nullptr);
@@ -149,7 +165,7 @@ tree<T> *tree<T>::add_min(char x)
 }
 
 template <class T>
-tree<T> *tree<T>::add_max(char x)
+tree<T> *tree<T>::add_max(const T &x)
 {
 	if (this == nullptr)
 		return new tree(nullptr, x, nullptr);
@@ -164,10 +180,10 @@ class list_const_iterator : public simple_ptr<const internal::tree_base<T>>
 {
 public:
 	using iterator_category = std::bidirectional_iterator_tag;
-	using value_type = const internal::tree_base<T>;
+	using value_type = const T;
 	using difference_type = int;
-	using pointer = const internal::tree_base<T> *;
-	using reference = const internal::tree_base<T> &;
+	using pointer = const T *;
+	using reference = const T &;
 
 	list_const_iterator(const internal::tree_base<T> *node = nullptr)
 		: simple_ptr<const internal::tree_base<T>>(node)
@@ -176,15 +192,20 @@ public:
 
 	list_const_iterator left()
 	{
-		return list_const_iterator((*this)->l);
+		return list_const_iterator(this->get()->l);
 	}
 	list_const_iterator right()
 	{
-		return list_const_iterator((*this)->r);
+		return list_const_iterator(this->get()->r);
 	}
 	list_const_iterator parent()
 	{
-		return list_const_iterator((*this)->p);
+		return list_const_iterator(this->get()->p);
+	}
+
+	difference_type size() const
+	{
+		return static_cast<const internal::tree<T> *>(this->get())->size();
 	}
 
 	bool operator ==(const list_const_iterator &other)
@@ -214,9 +235,37 @@ public:
 		}
 		return *this;
 	}
-	const T &operator *()
+	reference operator *()
 	{
 		return static_cast<const internal::tree<T> *>(this->get())->v;
+	}
+	pointer operator ->()
+	{
+		return &**this;
+	}
+};
+
+template <class T>
+class list;
+
+template <class T>
+class list_iterator : public list_const_iterator<T>
+{
+	friend class list<T>;
+protected:
+	list_iterator(list_const_iterator<T> other) : list_const_iterator<T>(other) { }
+public:
+	list_iterator() { }
+	using value_type = T;
+	using pointer = T *;
+	using reference = T &;
+	reference operator *()
+	{
+		return const_cast<reference>(list_const_iterator<T>::operator *());
+	}
+	pointer operator ->()
+	{
+		return const_cast<pointer>(list_const_iterator<T>::operator ->());
 	}
 };
 
@@ -226,9 +275,15 @@ class list
 	simple_ptr<internal::tree_head<T>> head;
 public:
 	typedef list_const_iterator<T> const_iterator;
+	typedef list_iterator<T> iterator;
 
 	list() : head(new internal::tree_head<T>())
 	{
+	}
+
+	void clear()
+	{
+		head->l = nullptr;
 	}
 
 	const_iterator begin() const
@@ -244,21 +299,72 @@ public:
 		return const_iterator(head);
 	}
 
-	const_iterator root()
+	iterator begin()
+	{
+		return const_cast<const list<T> *>(this)->begin();
+	}
+
+	iterator end()
+	{
+		return const_cast<const list<T> *>(this)->end();
+	}
+
+	const_iterator root() const
 	{
 		return const_iterator(head->root());
 	}
 
-	void push_front(char c)
+	void push_front(const T &v)
 	{
-		head->l = head->root()->add_min(c);
+		head->l = head->root()->add_min(v);
 		head->l->p = head;
 	}
-	void push_back(char c)
+	void push_back(const T &v)
 	{
-		head->l = head->root()->add_max(c);
+		head->l = head->root()->add_max(v);
 		head->l->p = head;
 		//std::cout << "!" << head->l << " " << head->root()->c << std::endl;
+	}
+
+	iterator insert(iterator before, const T &v)
+	{
+		throw std::runtime_error("not implemented");
+	}
+
+	int index(const_iterator i)
+	{
+		int ret = 0;
+		bool count = true;
+		if (i == end())
+			return i.left().size();
+		for (; i != end(); i = i.parent()) {
+			if (count)
+				ret += i.left().size();
+			count = (i == i.parent().right());
+			if (count)
+				ret += 1;
+		}
+		return ret;
+	}
+
+	void check() const
+	{
+		check(root());
+	}
+
+	void check(const_iterator i) const
+	{
+		if (!i)
+			return;
+		assert(i.size() == i.left().size() + 1 + i.right().size());
+		if (i.left()) {
+			assert(i.left().parent() == i);
+			check(i.left());
+		}
+		if (i.right()) {
+			assert(i.right().parent() == i);
+			check(i.right());
+		}
 	}
 };
 

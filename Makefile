@@ -1,5 +1,5 @@
 test: test1
-	./test1 100000
+	./test1 1000
 
 CFLAGS=-g -Wall -std=c++11 -Wno-nonnull-compare
 

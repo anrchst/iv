@@ -58,9 +58,9 @@ void handle_command(const std::string &command)
 		buf.cursor = buf.chars.begin();
 		win.update_file();
 	} else if (arg0 == "100") {
-		buf.cursor = buf.chars.find(100);
-		if (buf.cursor == buf.chars.end())
-			buf.cursor = --buf.chars.upper_bound(100);
+		//buf.cursor = buf.chars.find(100);
+		//if (buf.cursor == buf.chars.end())
+		buf.cursor = --buf.chars.upper_bound(100);
 		win.update_file();
 	} else if (arg0 == "refresh") {
 		win.update();
@@ -98,14 +98,14 @@ void handle_command(const std::string &command)
 		buf.cursor_x = 0;
 		win.update_file();
 	} else if (arg0 == "n_$") {
-		buf.cursor_x = buf.cursor->second.size() - 2;
+		buf.cursor_x = std::max(0, buf.cursor->size() - 2);
 		win.update_file();
 	} else if (arg0 == "n_i") {
-		buf.cursor_x = std::min(buf.cursor->second.size() - 1, buf.cursor_x);
+		buf.cursor_x = std::min(buf.cursor->size() - 1, buf.cursor_x);
 		mode = mode_type::INSERT;
 		win.update();
 	} else if (arg0 == "n_a") {
-		buf.cursor_x = std::min(buf.cursor->second.size() - 1, buf.cursor_x + 1);
+		buf.cursor_x = std::min(buf.cursor->size() - 1, buf.cursor_x + 1);
 		mode = mode_type::INSERT;
 		win.update();
 	} else if (arg0 == "n_I") {
@@ -113,7 +113,7 @@ void handle_command(const std::string &command)
 		mode = mode_type::INSERT;
 		win.update();
 	} else if (arg0 == "n_A") {
-		buf.cursor_x = buf.cursor->second.size() - 1;
+		buf.cursor_x = buf.cursor->size() - 1;
 		mode = mode_type::INSERT;
 		win.update();
 	} else if (arg0 != "misc") {
@@ -122,7 +122,7 @@ void handle_command(const std::string &command)
 		throw std::invalid_argument("need argument: " + arg0);
 	} else if (arg1 == "i:backspace") {
 		if (buf.cursor_x > 0) {
-			buf.cursor->second.erase(buf.cursor_x--, 1);
+			buf.cursor->erase(buf.cursor_x--, 1);
 			win.update_file();
 		}
 	} else if (arg1 == "c:backspace") {
@@ -134,7 +134,7 @@ void handle_command(const std::string &command)
 		win.activate_window();
 	} else if (arg1 == "escape") {
 		if (mode == mode_type::INSERT)
-			buf.cursor_x = std::min((int)buf.cursor->second.size() - 2, std::max((int)buf.cursor_x, 1) - 1);
+			buf.cursor_x = std::min(std::max((int)buf.cursor->size() - 2, 0), std::max(buf.cursor_x, 1) - 1);
 		mode = mode_type::NORMAL;
 		win.update();
 	} else if (arg1 == "c:return") {

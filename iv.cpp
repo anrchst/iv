@@ -25,13 +25,13 @@ const int tab_size = 8;
 
 struct buffer
 {
-	typedef std::map<int, std::string> chars_type;
+	typedef iv::list<std::string> chars_type;
 	chars_type chars;
 	chars_type::iterator start, cursor;
-	size_t cursor_x;
+	int cursor_x;
 	std::string filename;
 
-	buffer() : chars(), start(chars.begin()), cursor(chars.begin()) {}
+	buffer() : chars(), start(chars.end()), cursor(chars.end()) {}
 	buffer(const std::string _filename) : filename(_filename)
 	{
 		r();
@@ -44,7 +44,7 @@ struct buffer
 		std::string *line = NULL;
 		auto push = [this, &line](char c) {
 			if (line == NULL)
-				line = &chars.insert(std::make_pair(chars.size(), std::string())).first->second;
+				line = &*chars.insert(chars.end(), std::string());
 			line->push_back(c);
 		};
 		for (; begin != end; ++begin) {
@@ -68,19 +68,23 @@ struct buffer
 
 	void adjust_start()
 	{
+		/*
 		while (cursor->first >= start->first + LINES - 2)
 			++start;
 		while (cursor->first < start->first)
 			--start;
+		*/
 	}
 
 	void set_start(int _start)
 	{
+		/*
 		start = --chars.upper_bound(_start);
 		while (cursor->first >= start->first + LINES - 2)
 			--cursor;
 		while (cursor->first < start->first)
 			++cursor;
+		*/
 	}
 
 	void read(std::istream &stream)
@@ -90,8 +94,8 @@ struct buffer
 
 	void write(std::ostream &stream)
 	{
-		for (auto c : chars)
-			stream << c.second;
+		for (auto l : chars)
+			stream << l;
 	}
 
 	void r(std::string _filename = std::string())
@@ -199,12 +203,12 @@ void Window::update()
 void Window::update_file()
 {
 	wclear(file);
-	int line = buf.start->first;
-	for (buffer::chars_type::iterator i = buf.start; i != buf.chars.end(); i++) {
-		wmove(file, line++ - buf.start->first, 0);
-		waddnstr(file, i->second.c_str(), COLS);
+	int firstline = buf.chars.index(buf.start), line = fline;
+	for (buffer::chars_type::const_iterator i = buf.start; i != buf.chars.end(); i++) {
+		wmove(file, line++ - firstline, 0);
+		waddnstr(file, *i, COLS);
 	}
-	wmove(file, buf.cursor->first - buf.start->first, buf.cursor_x);
+	wmove(file, buf.chars.index(buf.cursor) - firstline, buf.cursor_x);
 }
 
 void Window::update_status()
@@ -284,7 +288,7 @@ void handle_key()
 		if (mode == mode_type::COMMAND && command_bindings.handle(c))
 			break;
 		if (mode == mode_type::INSERT && std::isprint(c)) {
-			buf.cursor->second.insert(buf.cursor_x, 1, c);
+			buf.cursor->insert(buf.cursor_x, 1, c);
 			buf.cursor_x++;
 			win.update_file();
 			break;
