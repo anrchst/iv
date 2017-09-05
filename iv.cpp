@@ -68,23 +68,21 @@ struct buffer
 
 	void adjust_start()
 	{
-		/*
-		while (cursor->first >= start->first + LINES - 2)
+		while (chars.index(cursor) >= chars.index(start) + LINES - 2)
 			++start;
-		while (cursor->first < start->first)
+		while (chars.index(cursor) < chars.index(start))
 			--start;
-		*/
 	}
 
 	void set_start(int _start)
 	{
-		/*
+		if (chars.upper_bound(_start) == chars.begin())
+			return;
 		start = --chars.upper_bound(_start);
-		while (cursor->first >= start->first + LINES - 2)
+		while (chars.index(cursor) >= chars.index(start) + LINES - 2)
 			--cursor;
-		while (cursor->first < start->first)
+		while (chars.index(cursor) < chars.index(start))
 			++cursor;
-		*/
 	}
 
 	void read(std::istream &stream)
