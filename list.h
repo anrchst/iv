@@ -78,9 +78,22 @@ struct tree : public tree_base<T>
 			this->r->p = this;
 	}
 
-	tree *add_min(const T &x);
-	tree *add_max(const T &x);
+	tree *add_min(const T &x, tree *&inserted);
+	tree *add_max(const T &x, tree *&inserted);
+	tree *add_min(const T &x) { tree *inserted; return this->add_min(x, inserted); }
+	tree *add_max(const T &x) { tree *inserted; return this->add_max(x, inserted); }
+	tree *insert(tree *before, const T &x, tree *&inserted);
+	tree *replace(tree *&src, tree *dst);
+	tree *&pointer() {
+		if (this == this->p->l)
+			return this->p->l;
+		else if (this == this->p->r)
+			return this->p->r;
+		else
+			throw std::runtime_error("no such child");
+	}
 protected:
+	static tree *join(tree *l, const T &v, tree *r);
 	static tree *balance(tree *l, const T &v, tree *r);
 };
 
@@ -156,21 +169,56 @@ tree<T> *tree<T>::balance(tree<T> *l, const T &v, tree<T> *r)
 }
 
 template <class T>
-tree<T> *tree<T>::add_min(const T &x)
+tree<T> *tree<T>::add_min(const T &x, tree<T> *&inserted)
 {
 	if (this == nullptr)
-		return new tree(nullptr, x, nullptr);
+		return inserted = new tree(nullptr, x, nullptr);
 	else
-		return balance(this->l->add_min(x), v, this->r);
+		return balance(this->l->add_min(x, inserted), v, this->r);
 }
 
 template <class T>
-tree<T> *tree<T>::add_max(const T &x)
+tree<T> *tree<T>::add_max(const T &x, tree<T> *&inserted)
 {
 	if (this == nullptr)
-		return new tree(nullptr, x, nullptr);
+		return inserted = new tree(nullptr, x, nullptr);
 	else
-		return balance(this->l, v, this->r->add_max(x));
+		return balance(this->l, v, this->r->add_max(x, inserted));
+}
+
+template <class T>
+tree<T> *tree<T>::insert(tree<T> *before, const T &x, tree<T> *&inserted)
+{
+	return replace(before->l, before->l->add_max(x, inserted));
+}
+
+template <class T>
+tree<T> *tree<T>::replace(tree<T> *&src, tree<T> *dst)
+{
+	if (this == src)
+		return dst;
+	tree<T> *srcparent = static_cast<tree<T> *>(src->p);
+	if (&src == &src->p->l)
+		return replace(srcparent->pointer(), join(dst, srcparent->v, srcparent->r));
+	else if (&src == &src->p->r)
+		return replace(srcparent->pointer(), join(srcparent->l, srcparent->v, dst));
+	else
+		throw std::runtime_error("src has no parent");
+}
+
+template <class T>
+tree<T> *tree<T>::join(tree<T> *l, const T &v, tree<T> *r)
+{
+	if (l == nullptr)
+		return r->add_min(v);
+	else if (r == nullptr)
+		return l->add_max(v);
+	else if (l->h > r->h + 2)
+		return balance(l->l, l->v, join(l->r, v, r));
+	else if (r->h > l->h + 2)
+		return balance(join(r->l, v, l), r->v, r->r);
+	else
+		return new tree<T>(l, v, r);
 }
 
 } // namespace iv::internal
@@ -280,6 +328,7 @@ class list_iterator : public list_const_iterator<T>
 	friend class list<T>;
 protected:
 	list_iterator(list_const_iterator<T> other) : list_const_iterator<T>(other) { }
+	internal::tree_base<T> *get() { return const_cast<internal::tree_base<T> *>(list_const_iterator<T>::get()); }
 public:
 	list_iterator() { }
 	using value_type = T;
@@ -376,7 +425,14 @@ public:
 
 	iterator insert(iterator before, const T &v)
 	{
-		throw std::runtime_error("not implemented");
+		internal::tree<T> *inserted;
+		if (before.get() == head.get())
+			head->l = head->root()->add_max(v, inserted);
+		else {
+			head->l = head->root()->insert(static_cast<internal::tree<T> *>(before.get()), v, inserted);
+		}
+		head->l->p = head;
+		return iterator(inserted);
 	}
 
 	int index(const_iterator i)
