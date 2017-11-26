@@ -23,10 +23,10 @@ nmap(339, "page up");
 nmap(338, "page down");
 imap(339, "page up");
 imap(338, "page down");
-nmap(21, "halfpage up");
-nmap(4, "halfpage down");
-imap(21, "halfpage up");
-imap(4, "halfpage down");
+nmap(CTRL('U'), "halfpage up");
+nmap(CTRL('D'), "halfpage down");
+imap(CTRL('U'), "halfpage up");
+imap(CTRL('D'), "halfpage down");
 
 nmap('0', "n_0");
 nmap('$', "n_$");
