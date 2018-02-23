@@ -15,7 +15,7 @@
 #include <ncurses.h>
 #include <signal.h>
 #include <stdio.h>
-#include "list.h"
+#include "text.h"
 
 #ifndef CTRL
 #define CTRL(c) ((c) & 037)
@@ -25,7 +25,7 @@ const int tab_size = 8;
 
 struct buffer
 {
-	typedef iv::list<std::string> chars_type;
+	typedef text<std::string> chars_type;
 	chars_type chars;
 	chars_type::iterator start, cursor;
 	int cursor_x;

@@ -16,16 +16,16 @@ namespace iv
 namespace internal
 {
 
-template <class T>
+template <class T, class StatTag>
 struct tree;
 
-template <class T>
+template <class T, class StatTag>
 struct tree_base
 {
-	tree<T> *l, *r; // left, right
+	tree<T,StatTag> *l, *r; // left, right
 	tree_base *p; // parent
 
-	tree_base(tree<T> *_l, tree<T> *_r)
+	tree_base(tree<T,StatTag> *_l, tree<T,StatTag> *_r)
 		: l(_l), r(_r)
 	{
 	}
@@ -33,22 +33,22 @@ struct tree_base
 	void resurrect();
 };
 
-template <class T>
-struct tree_head : public tree_base<T>
+template <class T, class StatTag>
+struct tree_head : public tree_base<T,StatTag>
 {
-	tree_head(tree<T> *_root = nullptr) : tree_base<T>(_root, nullptr) { }
-	tree<T> *root() const
+	tree_head(tree<T,StatTag> *_root = nullptr) : tree_base<T,StatTag>(_root, nullptr) { }
+	tree<T,StatTag> *root() const
 	{
 		return this->l;
 	}
 };
 
-template <class T>
-struct tree : public tree_base<T>
+template <class T, class StatTag>
+struct tree : public tree_base<T,StatTag>
 {
 	T v; // contained value
 	int h; // height
-	int s; // subtree size
+	typename StatTag::value_type s; // stat
 
 	int height() const
 	{
@@ -58,19 +58,20 @@ struct tree : public tree_base<T>
 			return h;
 	}
 
-	int size() const
+	typename StatTag::value_type stat() const
 	{
 		if (this == nullptr)
-			return 0;
+			return StatTag::leaf_value();
 		else
 			return s;
 	}
 
 	tree(tree *_l, const T &_v, tree *_r)
-		: tree_base<T>(_l, _r),
+		: tree_base<T,StatTag>(_l, _r),
 		v(_v),
 		h(std::max(this->l->height(), this->r->height()) + 1),
-		s(this->l->size() + 1 + this->r->size())
+		s(this->l->stat() + StatTag::singleton_value(this)
+		  + this->r->stat())
 	{
 		if (this->l)
 			this->l->p = this;
@@ -97,8 +98,8 @@ protected:
 	static tree *balance(tree *l, const T &v, tree *r);
 };
 
-template <class T>
-void tree_base<T>::resurrect()
+template <class T, class StatTag>
+void tree_base<T,StatTag>::resurrect()
 {
 	//std::cerr << "Resurrecting " << this << std::endl;
 	if (l) {
@@ -143,8 +144,8 @@ void tree_base<T>::resurrect()
         Node{l; v; r; h=(if hl >= hr then hl + 1 else hr + 1)}
 */
 
-template <class T>
-tree<T> *tree<T>::balance(tree<T> *l, const T &v, tree<T> *r)
+template <class T, class StatTag>
+tree<T,StatTag> *tree<T,StatTag>::balance(tree<T,StatTag> *l, const T &v, tree<T,StatTag> *r)
 {
 	if (l->height() > r->height() + 2) {
 		if (l->l->height() >= l->r->height()) {
@@ -168,8 +169,8 @@ tree<T> *tree<T>::balance(tree<T> *l, const T &v, tree<T> *r)
 		return new tree(l, v, r);
 }
 
-template <class T>
-tree<T> *tree<T>::add_min(const T &x, tree<T> *&inserted)
+template <class T, class StatTag>
+tree<T,StatTag> *tree<T,StatTag>::add_min(const T &x, tree<T,StatTag> *&inserted)
 {
 	if (this == nullptr)
 		return inserted = new tree(nullptr, x, nullptr);
@@ -177,8 +178,8 @@ tree<T> *tree<T>::add_min(const T &x, tree<T> *&inserted)
 		return balance(this->l->add_min(x, inserted), v, this->r);
 }
 
-template <class T>
-tree<T> *tree<T>::add_max(const T &x, tree<T> *&inserted)
+template <class T, class StatTag>
+tree<T,StatTag> *tree<T,StatTag>::add_max(const T &x, tree<T,StatTag> *&inserted)
 {
 	if (this == nullptr)
 		return inserted = new tree(nullptr, x, nullptr);
@@ -186,18 +187,18 @@ tree<T> *tree<T>::add_max(const T &x, tree<T> *&inserted)
 		return balance(this->l, v, this->r->add_max(x, inserted));
 }
 
-template <class T>
-tree<T> *tree<T>::insert(tree<T> *before, const T &x, tree<T> *&inserted)
+template <class T, class StatTag>
+tree<T,StatTag> *tree<T,StatTag>::insert(tree<T,StatTag> *before, const T &x, tree<T,StatTag> *&inserted)
 {
 	return replace(before->l, before->l->add_max(x, inserted));
 }
 
-template <class T>
-tree<T> *tree<T>::replace(tree<T> *&src, tree<T> *dst)
+template <class T, class StatTag>
+tree<T,StatTag> *tree<T,StatTag>::replace(tree<T,StatTag> *&src, tree<T,StatTag> *dst)
 {
 	if (this == src)
 		return dst;
-	tree<T> *srcparent = static_cast<tree<T> *>(src->p);
+	tree<T,StatTag> *srcparent = static_cast<tree<T,StatTag> *>(src->p);
 	if (&src == &src->p->l)
 		return replace(srcparent->pointer(), join(dst, srcparent->v, srcparent->r));
 	else if (&src == &src->p->r)
@@ -206,8 +207,8 @@ tree<T> *tree<T>::replace(tree<T> *&src, tree<T> *dst)
 		throw std::runtime_error("src has no parent");
 }
 
-template <class T>
-tree<T> *tree<T>::join(tree<T> *l, const T &v, tree<T> *r)
+template <class T, class StatTag>
+tree<T,StatTag> *tree<T,StatTag>::join(tree<T,StatTag> *l, const T &v, tree<T,StatTag> *r)
 {
 	if (l == nullptr)
 		return r->add_min(v);
@@ -218,13 +219,13 @@ tree<T> *tree<T>::join(tree<T> *l, const T &v, tree<T> *r)
 	else if (r->h > l->h + 2)
 		return balance(join(r->l, v, l), r->v, r->r);
 	else
-		return new tree<T>(l, v, r);
+		return new tree<T,StatTag>(l, v, r);
 }
 
 } // namespace iv::internal
 
-template <class T>
-class list_const_iterator : public simple_ptr<const internal::tree_base<T>>
+template <class T, class StatTag>
+class list_const_iterator : public simple_ptr<const internal::tree_base<T,StatTag>>
 {
 public:
 	using iterator_category = std::bidirectional_iterator_tag;
@@ -233,8 +234,8 @@ public:
 	using pointer = const T *;
 	using reference = const T &;
 
-	list_const_iterator(const internal::tree_base<T> *node = nullptr)
-		: simple_ptr<const internal::tree_base<T>>(node)
+	list_const_iterator(const internal::tree_base<T,StatTag> *node = nullptr)
+		: simple_ptr<const internal::tree_base<T,StatTag>>(node)
 	{
 	}
 
@@ -251,9 +252,9 @@ public:
 		return list_const_iterator(this->get()->p);
 	}
 
-	difference_type size() const
+	difference_type stat() const
 	{
-		return static_cast<const internal::tree<T> *>(this->get())->size();
+		return static_cast<const internal::tree<T,StatTag> *>(this->get())->stat();
 	}
 
 	bool operator ==(const list_const_iterator &other)
@@ -311,7 +312,7 @@ public:
 
 	reference operator *()
 	{
-		return static_cast<const internal::tree<T> *>(this->get())->v;
+		return static_cast<const internal::tree<T,StatTag> *>(this->get())->v;
 	}
 	pointer operator ->()
 	{
@@ -319,62 +320,62 @@ public:
 	}
 };
 
-template <class T>
+template <class T, class StatTag>
 class list;
 
-template <class T>
-class list_iterator : public list_const_iterator<T>
+template <class T, class StatTag>
+class list_iterator : public list_const_iterator<T,StatTag>
 {
-	friend class list<T>;
+	friend class list<T,StatTag>;
 protected:
-	list_iterator(list_const_iterator<T> other) : list_const_iterator<T>(other) { }
-	internal::tree_base<T> *get() { return const_cast<internal::tree_base<T> *>(list_const_iterator<T>::get()); }
+	list_iterator(list_const_iterator<T,StatTag> other) : list_const_iterator<T,StatTag>(other) { }
+	internal::tree_base<T,StatTag> *get() { return const_cast<internal::tree_base<T,StatTag> *>(list_const_iterator<T,StatTag>::get()); }
 public:
 	list_iterator() { }
 	using value_type = T;
-	using pointer = T *;
-	using reference = T &;
+	using pointer = value_type *;
+	using reference = value_type &;
 	reference operator *()
 	{
-		return const_cast<reference>(list_const_iterator<T>::operator *());
+		return const_cast<reference>(list_const_iterator<T,StatTag>::operator *());
 	}
 	pointer operator ->()
 	{
-		return const_cast<pointer>(list_const_iterator<T>::operator ->());
+		return const_cast<pointer>(list_const_iterator<T,StatTag>::operator ->());
 	}
 	list_iterator &operator ++()
 	{
-		list_const_iterator<T>::operator ++();
+		list_const_iterator<T,StatTag>::operator ++();
 		return *this;
 	}
 	list_iterator &operator --()
 	{
-		list_const_iterator<T>::operator --();
+		list_const_iterator<T,StatTag>::operator --();
 		return *this;
 	}
 	list_iterator operator ++(int)
 	{
 		list_iterator ret = *this;
-		list_const_iterator<T>::operator ++();
+		list_const_iterator<T,StatTag>::operator ++();
 		return ret;
 	}
 	list_iterator operator --(int)
 	{
 		list_iterator ret = *this;
-		list_const_iterator<T>::operator --();
+		list_const_iterator<T,StatTag>::operator --();
 		return ret;
 	}
 };
 
-template <class T>
+template <class T, class StatTag>
 class list
 {
-	simple_ptr<internal::tree_head<T>> head;
+	simple_ptr<internal::tree_head<T,StatTag>> head;
 public:
-	typedef list_const_iterator<T> const_iterator;
-	typedef list_iterator<T> iterator;
+	typedef list_const_iterator<T,StatTag> const_iterator;
+	typedef list_iterator<T,StatTag> iterator;
 
-	list() : head(new internal::tree_head<T>())
+	list() : head(new internal::tree_head<T,StatTag>())
 	{
 	}
 
@@ -398,12 +399,12 @@ public:
 
 	iterator begin()
 	{
-		return const_cast<const list<T> *>(this)->begin();
+		return const_cast<const list<T,StatTag> *>(this)->begin();
 	}
 
 	iterator end()
 	{
-		return const_cast<const list<T> *>(this)->end();
+		return const_cast<const list<T,StatTag> *>(this)->end();
 	}
 
 	const_iterator root() const
@@ -425,69 +426,20 @@ public:
 
 	iterator insert(iterator before, const T &v)
 	{
-		internal::tree<T> *inserted;
+		internal::tree<T, StatTag> *inserted;
 		if (before.get() == head.get())
 			head->l = head->root()->add_max(v, inserted);
 		else {
-			head->l = head->root()->insert(static_cast<internal::tree<T> *>(before.get()), v, inserted);
+			head->l = head->root()->insert(static_cast<internal::tree<T, StatTag> *>(before.get()), v, inserted);
 		}
 		head->l->p = head;
 		return iterator(inserted);
 	}
 
-	int index(const_iterator i)
+protected:
+	iterator make_iterator(const_iterator i)
 	{
-		int ret = 0;
-		bool count = true;
-		if (i == end())
-			return i.left().size();
-		for (; i != end(); i = i.parent()) {
-			if (count)
-				ret += i.left().size();
-			count = (i == i.parent().right());
-			if (count)
-				ret += 1;
-		}
-		return ret;
-	}
-
-	void check() const
-	{
-		check(root());
-	}
-
-	void check(const_iterator i) const
-	{
-		if (!i)
-			return;
-		assert(i.size() == i.left().size() + 1 + i.right().size());
-		if (i.left()) {
-			assert(i.left().parent() == i);
-			check(i.left());
-		}
-		if (i.right()) {
-			assert(i.right().parent() == i);
-			check(i.right());
-		}
-	}
-
-	const_iterator upper_bound(int index) const
-	{
-		if (root().size() <= index)
-			return end();
-		const_iterator ret = root();
-		while (ret.left().size() != index) {
-			if (ret.left().size() < index) {
-				index -= ret.left().size() + 1;
-				ret = ret.right();
-			} else
-				ret = ret.left();
-		}
-		return ret;
-	}
-	iterator upper_bound(int index)
-	{
-		return const_cast<const list *>(this)->upper_bound(index);
+		return i;
 	}
 };
 
