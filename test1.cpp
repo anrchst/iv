@@ -1,26 +1,16 @@
 #include <cassert>
-#include <cctype>
-#include <cstdlib>
-#include <fstream>
-#include <iostream>
+#include <string>
 #include "text.h"
 
-int main(int argc, char **argv)
+int main()
 {
-	std::cout << "Test1" << std::endl;
-	text<int> l;
-	int n = std::atoi(argv[1]);
-	for (int i = 0; i < n; i++) {
-		l.push_back(i);
-		text<int>::const_iterator it = l.begin();
-		for (int j = 0; j <= i; j++) {
-			if (i % 200 == 0 && j % 200 == 0)
-				std::cout << i << " " << j << std::endl;
-			assert(*it == j);
-			assert(l.index(it) == j);
-			++it;
-		}
-	}
-	assert(l.index(l.end()) == n);
-	return 0;
+	std::string s = "abcde\nfgh\n";
+	text<char> t;
+	t.assign(s.begin(), s.end());
+	assert(*t.begin() == 'a');
+	assert(t.line(t.begin()) == 0);
+	text<char>::iterator f = t.begin();
+	std::advance(f, 6);
+	assert(*f == 'f');
+	assert(t.line(f) == 1);
 }

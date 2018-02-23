@@ -70,9 +70,6 @@ struct buffer : public text<char>
 				for (int i = 0; i < tab_size; i++)
 					push_back(' ');
 				break;
-			case '\n':
-				push_back(*begin);
-				break;
 			default:
 				push_back(*begin);
 				break;

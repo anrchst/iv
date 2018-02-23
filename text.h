@@ -59,9 +59,9 @@ struct text : public iv::list<T, returns_tag<T>>
 		for (; i != end(); i = i.parent()) {
 			if (count)
 				ret += i.left().stat();
-			count = (i == i.parent().right());
+			count = (i != i.parent().left());
 			if (count)
-				ret += 1;
+				ret += (*i == '\n');
 		}
 		return ret;
 	}
@@ -85,6 +85,22 @@ struct text : public iv::list<T, returns_tag<T>>
 	iterator line(int index)
 	{
 		return this->make_iterator(const_cast<const text *>(this)->line(index));
+	}
+	template <class Iterator>
+	void assign(Iterator begin, Iterator end)
+	{
+		this->clear();
+		for (; begin != end; ++begin) {
+			switch (*begin) {
+			case '\t':
+				for (int i = 0; i < 8; i++)
+					this->push_back(' ');
+				break;
+			default:
+				this->push_back(*begin);
+				break;
+			}
+		}
 	}
 };
 

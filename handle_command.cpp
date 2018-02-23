@@ -53,8 +53,10 @@ void handle_command(const std::string &command)
 		} else if (direction == "down") {
 			auto cl = buf.cline();
 			auto cx = std::distance(buf.line(cl), buf.cursor_);
-			for (buf.cursor_ = buf.line(cl + 1); buf.cursor_x() < cx; buf.cursor_++)
+			std::cout << cl << " " << cx << std::endl;
+			for (buf.cursor_ = buf.line(cl + 1); *buf.cursor() != '\n' && buf.cursor_x() < cx; buf.cursor_++)
 				;
+			buf.cursor_--;
 			buf.adjust_start();
 		}
 		win.update_file();
@@ -90,9 +92,9 @@ void handle_command(const std::string &command)
 		std::string direction;
 		if (args >> direction) {
 			if (direction == "up") {
-				buf.set_start(std::max(0, buf.line(buf.start()) - LINES / 2 + 1));
+				buf.set_start(std::max(0, (int)buf.sline() - LINES / 2 + 1));
 			} else if (direction == "down") {
-				buf.set_start(buf.line(buf.start()) + LINES / 2 - 1);
+				buf.set_start((int)buf.sline() + LINES / 2 - 1);
 			}
 			win.update_file();
 		}

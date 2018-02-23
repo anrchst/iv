@@ -6,7 +6,7 @@ iv: Makefile iv.cpp config.cpp handle_command.cpp list.h text.h
 test: test1
 	./test1 1000
 
-test1: test1.cpp list.h Makefile
+test1: test1.cpp list.h text.h Makefile
 	g++ ${CFLAGS} -o $@ test1.cpp
 
 .PHONY: test
