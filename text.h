@@ -37,14 +37,14 @@ struct text : public iv::list<T, returns_tag<T>>
 
 	void check(const_iterator i) const
 	{
-		if (!i)
+		if (!i.get())
 			return;
 		assert(i.stat() == i.left().stat() + (*i == T('\n')) + i.right().stat());
-		if (i.left()) {
+		if (i.left().get()) {
 			assert(i.left().parent() == i);
 			check(i.left());
 		}
-		if (i.right()) {
+		if (i.right().get()) {
 			assert(i.right().parent() == i);
 			check(i.right());
 		}
@@ -80,7 +80,7 @@ struct text : public iv::list<T, returns_tag<T>>
 			} else
 				ret = ret.left();
 		}
-		return ret;
+		return ++ret;
 	}
 	iterator line(int index)
 	{

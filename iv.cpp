@@ -78,17 +78,17 @@ struct buffer : public text<char>
 		start_ = cursor_ = this->begin();
 	}
 
-	unsigned cline() const
+	int cline() const
 	{
 		return line(cursor());
 	}
 
-	unsigned sline() const
+	int sline() const
 	{
 		return line(start());
 	}
 
-	unsigned cline_size() const
+	int cline_size() const
 	{
 		return std::distance(line(cline()), line(cline() + 1));
 	}
@@ -234,6 +234,10 @@ void Window::update_file()
 		waddch(file, *i);
 	}
 	int cline = buf.cline();
+	wmove(file, 5, 0);
+	std::ostringstream o;
+	o << cline << std::endl;
+	waddstr(file, o.str().c_str());
 	wmove(file, cline - firstline, std::distance(buf.line(buf.cline()), buf.cursor()));
 }
 
