@@ -12,15 +12,45 @@ struct subtree_size_tag
 };
 
 template <class T>
-struct text : public iv::list<T, subtree_size_tag>
+struct returns_tag
 {
-	typedef iv::list<T, subtree_size_tag> parent_type;
+	typedef int value_type;
+	static value_type leaf_value() { return 0; }
+	template<class Node>
+	static value_type singleton_value(Node *n) { return n->v == T('\n'); }
+};
+
+
+template <class T>
+struct text : public iv::list<T, returns_tag<T>>
+{
+	typedef iv::list<T, returns_tag<T>> parent_type;
 	using typename parent_type::const_iterator;
 	using typename parent_type::iterator;
 	using parent_type::begin;
 	using parent_type::end;
 	using parent_type::root;
-	int index(const_iterator i)
+	void check() const
+	{
+		check(root());
+	}
+
+	void check(const_iterator i) const
+	{
+		if (!i)
+			return;
+		assert(i.stat() == i.left().stat() + (*i == T('\n')) + i.right().stat());
+		if (i.left()) {
+			assert(i.left().parent() == i);
+			check(i.left());
+		}
+		if (i.right()) {
+			assert(i.right().parent() == i);
+			check(i.right());
+		}
+	}
+
+	int line(const_iterator i) const
 	{
 		int ret = 0;
 		bool count = true;
@@ -36,28 +66,10 @@ struct text : public iv::list<T, subtree_size_tag>
 		return ret;
 	}
 
-	void check() const
+	const_iterator line(int index) const
 	{
-		check(root());
-	}
-
-	void check(const_iterator i) const
-	{
-		if (!i)
-			return;
-		assert(i.stat() == i.left().stat() + 1 + i.right().stat());
-		if (i.left()) {
-			assert(i.left().parent() == i);
-			check(i.left());
-		}
-		if (i.right()) {
-			assert(i.right().parent() == i);
-			check(i.right());
-		}
-	}
-
-	const_iterator upper_bound(int index) const
-	{
+		if (index < 0)
+			index = 0;
 		if (root().stat() <= index)
 			return end();
 		const_iterator ret = root();
@@ -70,9 +82,9 @@ struct text : public iv::list<T, subtree_size_tag>
 		}
 		return ret;
 	}
-	iterator upper_bound(int index)
+	iterator line(int index)
 	{
-		return this->make_iterator(const_cast<const text *>(this)->upper_bound(index));
+		return this->make_iterator(const_cast<const text *>(this)->line(index));
 	}
 };
 

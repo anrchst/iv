@@ -23,66 +23,96 @@
 
 const int tab_size = 8;
 
-struct buffer
+struct buffer : public text<char>
 {
-	typedef text<std::string> chars_type;
-	chars_type chars;
-	chars_type::iterator start, cursor;
-	int cursor_x;
+	typedef text<char> parent_type;
+	iterator start_, cursor_;
 	std::string filename;
 
-	buffer() : chars(), start(chars.end()), cursor(chars.end()) {}
+	buffer() : start_(end()), cursor_(end()) {}
 	buffer(const std::string _filename) : filename(_filename)
 	{
 		r();
 	}
 
+	const_iterator start() const
+	{
+		return start_;
+	}
+
+	iterator start()
+	{
+		return start_;
+	}
+
+	const_iterator cursor() const
+	{
+		return cursor_;
+	}
+
+	iterator cursor()
+	{
+		return cursor_;
+	}
+
+	int cursor_x() const
+	{
+		return std::distance(line(cline()), cursor());
+	}
+
 	template <class Iterator>
 	void assign(Iterator begin, Iterator end)
 	{
-		chars.clear();
-		std::string *line = NULL;
-		auto push = [this, &line](char c) {
-			if (line == NULL)
-				line = &*chars.insert(chars.end(), std::string());
-			line->push_back(c);
-		};
+		clear();
 		for (; begin != end; ++begin) {
 			switch (*begin) {
 			case '\t':
 				for (int i = 0; i < tab_size; i++)
-					push(' ');
+					push_back(' ');
 				break;
 			case '\n':
-				push(*begin);
-				line = NULL;
+				push_back(*begin);
 				break;
 			default:
-				push(*begin);
+				push_back(*begin);
 				break;
 			}
 		}
-		start = cursor = chars.begin();
-		cursor_x = 0;
+		start_ = cursor_ = this->begin();
+	}
+
+	unsigned cline() const
+	{
+		return line(cursor());
+	}
+
+	unsigned sline() const
+	{
+		return line(start());
+	}
+
+	unsigned cline_size() const
+	{
+		return std::distance(line(cline()), line(cline() + 1));
 	}
 
 	void adjust_start()
 	{
-		while (chars.index(cursor) >= chars.index(start) + LINES - 2)
-			++start;
-		while (chars.index(cursor) < chars.index(start))
-			--start;
+		while (cline() >= sline() + LINES - 2)
+			++start_;
+		while (cline() < sline())
+			--start_;
 	}
 
-	void set_start(int _start)
+	void set_start(unsigned _start)
 	{
-		if (chars.upper_bound(_start) == chars.begin())
+		if (line(_start) == begin())
 			return;
-		start = --chars.upper_bound(_start);
-		while (chars.index(cursor) >= chars.index(start) + LINES - 2)
-			--cursor;
-		while (chars.index(cursor) < chars.index(start))
-			++cursor;
+		start_ = line(_start - 1);
+		while (cline() >= sline() + LINES - 2)
+			--cursor_;
+		while (cline() < sline())
+			++cursor_;
 	}
 
 	void read(std::istream &stream)
@@ -92,8 +122,8 @@ struct buffer
 
 	void write(std::ostream &stream)
 	{
-		for (auto l : chars)
-			stream << l;
+		for (auto c : *this)
+			stream << c;
 	}
 
 	void r(std::string _filename = std::string())
@@ -201,12 +231,13 @@ void Window::update()
 void Window::update_file()
 {
 	wclear(file);
-	int firstline = buf.chars.index(buf.start), line = firstline;
-	for (buffer::chars_type::const_iterator i = buf.start; i != buf.chars.end(); ++i) {
-		wmove(file, line++ - firstline, 0);
-		waddnstr(file, i->c_str(), COLS);
+	int firstline = buf.sline();
+	wmove(file, 0, 0);
+	for (buffer::const_iterator i = buf.start(); i != buf.end(); ++i) {
+		waddch(file, *i);
 	}
-	wmove(file, buf.chars.index(buf.cursor) - firstline, buf.cursor_x);
+	int cline = buf.cline();
+	wmove(file, cline - firstline, std::distance(buf.line(buf.cline()), buf.cursor()));
 }
 
 void Window::update_status()
@@ -286,8 +317,8 @@ void handle_key()
 		if (mode == mode_type::COMMAND && command_bindings.handle(c))
 			break;
 		if (mode == mode_type::INSERT && std::isprint(c)) {
-			buf.cursor->insert(buf.cursor_x, 1, c);
-			buf.cursor_x++;
+			buf.insert(buf.cursor_, c);
+			buf.cursor_++;
 			win.update_file();
 			break;
 		}

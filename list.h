@@ -36,7 +36,10 @@ struct tree_base
 template <class T, class StatTag>
 struct tree_head : public tree_base<T,StatTag>
 {
-	tree_head(tree<T,StatTag> *_root = nullptr) : tree_base<T,StatTag>(_root, nullptr) { }
+	tree_head(tree<T,StatTag> *_root = nullptr)
+		: tree_base<T,StatTag>(_root, _root)
+	{
+	}
 	tree<T,StatTag> *root() const
 	{
 		return this->l;
@@ -117,31 +120,31 @@ void tree_base<T,StatTag>::resurrect()
       let hl = match l with Empty -> 0 | Node {h} -> h in
       let hr = match r with Empty -> 0 | Node {h} -> h in
       if hl > hr + 2 then begin
-        match l with
-          Empty -> invalid_arg "Set.bal"
-        | Node{l=ll; v=lv; r=lr} ->
-            if height ll >= height lr then
-              create ll lv (create lr v r)
-            else begin
-              match lr with
-                Empty -> invalid_arg "Set.bal"
-              | Node{l=lrl; v=lrv; r=lrr}->
-                  create (create ll lv lrl) lrv (create lrr v r)
-            end
+	match l with
+	  Empty -> invalid_arg "Set.bal"
+	| Node{l=ll; v=lv; r=lr} ->
+	    if height ll >= height lr then
+	      create ll lv (create lr v r)
+	    else begin
+	      match lr with
+		Empty -> invalid_arg "Set.bal"
+	      | Node{l=lrl; v=lrv; r=lrr}->
+		  create (create ll lv lrl) lrv (create lrr v r)
+	    end
       end else if hr > hl + 2 then begin
-        match r with
-          Empty -> invalid_arg "Set.bal"
-        | Node{l=rl; v=rv; r=rr} ->
-            if height rr >= height rl then
-              create (create l v rl) rv rr
-            else begin
-              match rl with
-                Empty -> invalid_arg "Set.bal"
-              | Node{l=rll; v=rlv; r=rlr} ->
-                  create (create l v rll) rlv (create rlr rv rr)
-            end
+	match r with
+	  Empty -> invalid_arg "Set.bal"
+	| Node{l=rl; v=rv; r=rr} ->
+	    if height rr >= height rl then
+	      create (create l v rl) rv rr
+	    else begin
+	      match rl with
+		Empty -> invalid_arg "Set.bal"
+	      | Node{l=rll; v=rlv; r=rlr} ->
+		  create (create l v rll) rlv (create rlr rv rr)
+	    end
       end else
-        Node{l; v; r; h=(if hl >= hr then hl + 1 else hr + 1)}
+	Node{l; v; r; h=(if hl >= hr then hl + 1 else hr + 1)}
 */
 
 template <class T, class StatTag>
@@ -225,8 +228,9 @@ tree<T,StatTag> *tree<T,StatTag>::join(tree<T,StatTag> *l, const T &v, tree<T,St
 } // namespace iv::internal
 
 template <class T, class StatTag>
-class list_const_iterator : public simple_ptr<const internal::tree_base<T,StatTag>>
+class list_const_iterator
 {
+	const internal::tree_base<T,StatTag> *ptr;
 public:
 	using iterator_category = std::bidirectional_iterator_tag;
 	using value_type = const T;
@@ -235,10 +239,11 @@ public:
 	using reference = const T &;
 
 	list_const_iterator(const internal::tree_base<T,StatTag> *node = nullptr)
-		: simple_ptr<const internal::tree_base<T,StatTag>>(node)
+		: ptr(node)
 	{
 	}
 
+	const internal::tree_base<T,StatTag> *get() const { return ptr; };
 	list_const_iterator left()
 	{
 		return list_const_iterator(this->get()->l);
@@ -251,7 +256,10 @@ public:
 	{
 		return list_const_iterator(this->get()->p);
 	}
-
+	bool is_root() const
+	{
+		return parent() == *this;
+	}
 	difference_type stat() const
 	{
 		return static_cast<const internal::tree<T,StatTag> *>(this->get())->stat();
@@ -259,26 +267,21 @@ public:
 
 	bool operator ==(const list_const_iterator &other)
 	{
-		return this->get() == other.get();
+		return this->ptr == other.ptr;
 	}
 	bool operator !=(const list_const_iterator &other)
 	{
-		return this->get() != other.get();
-	}
-
-	operator bool()
-	{
-		return *this != list_const_iterator();
+		return this->ptr != other.ptr;
 	}
 
 	list_const_iterator &operator ++()
 	{
-		if (right()) {
+		if (right().get()) {
 			*this = right();
-			while (left())
+			while (left().get())
 				*this = left();
 		} else {
-			while (*this == parent().right())
+			while (*this != parent().left())
 				*this = parent();
 			*this = parent();
 		}
@@ -286,9 +289,9 @@ public:
 	}
 	list_const_iterator &operator --()
 	{
-		if (left()) {
+		if (left().get()) {
 			*this = left();
-			while (right())
+			while (right().get())
 				*this = right();
 		} else {
 			while (*this == parent().left())
@@ -312,7 +315,7 @@ public:
 
 	reference operator *()
 	{
-		return static_cast<const internal::tree<T,StatTag> *>(this->get())->v;
+		return static_cast<const internal::tree<T,StatTag> *>(this->ptr)->v;
 	}
 	pointer operator ->()
 	{
@@ -365,12 +368,16 @@ public:
 		list_const_iterator<T,StatTag>::operator --();
 		return ret;
 	}
+	operator list_const_iterator<T,StatTag>() const
+	{
+		return *this;
+	}
 };
 
 template <class T, class StatTag>
 class list
 {
-	simple_ptr<internal::tree_head<T,StatTag>> head;
+	internal::tree_head<T,StatTag> *head;
 public:
 	typedef list_const_iterator<T,StatTag> const_iterator;
 	typedef list_iterator<T,StatTag> iterator;
@@ -387,7 +394,7 @@ public:
 	const_iterator begin() const
 	{
 		const_iterator ret(head);
-		while (ret.left())
+		while (ret.left().get())
 			ret = ret.left();
 		return ret;
 	}
@@ -414,20 +421,20 @@ public:
 
 	void push_front(const T &v)
 	{
-		head->l = head->root()->add_min(v);
-		head->l->p = head;
+		head->l = head->r = head->root()->add_min(v);
+		head->l->p = head->r->p = head;
 	}
 	void push_back(const T &v)
 	{
-		head->l = head->root()->add_max(v);
-		head->l->p = head;
+		head->l = head->r = head->root()->add_max(v);
+		head->l->p = head->r->p = head;
 		//std::cout << "!" << head->l << " " << head->root()->c << std::endl;
 	}
 
 	iterator insert(iterator before, const T &v)
 	{
 		internal::tree<T, StatTag> *inserted;
-		if (before.get() == head.get())
+		if (before.get() == head)
 			head->l = head->root()->add_max(v, inserted);
 		else {
 			head->l = head->root()->insert(static_cast<internal::tree<T, StatTag> *>(before.get()), v, inserted);

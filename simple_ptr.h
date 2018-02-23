@@ -15,7 +15,7 @@ public:
 	const T &operator *() const { return *ptr; }
 	const T *operator ->() const { return ptr; }
 	T *get() const { return ptr; }
-	operator T *() const { return ptr; }
+	//operator T *() const { return ptr; }
 };
 
 }

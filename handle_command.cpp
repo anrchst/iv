@@ -40,27 +40,29 @@ void handle_command(const std::string &command)
 		std::string direction;
 		if (!(args >> direction))
 			throw std::invalid_argument(":cursor needs an argument");
-		if (direction == "left" && buf.cursor_x > 0)
-			buf.cursor_x--;
-		else if (direction == "right" && buf.cursor_x < (int)buf.cursor->size() - 1 - (mode == mode_type::NORMAL))
-			buf.cursor_x++;
-		else if (direction == "up" && buf.cursor != buf.chars.begin()) {
-			--buf.cursor;
+		if (direction == "left" && buf.cursor_x() > 0)
+			buf.cursor_--;
+		else if (direction == "right" && buf.cursor_x() < (int)buf.cline_size() - 1 - (mode == mode_type::NORMAL))
+			buf.cursor_++;
+		else if (direction == "up" && buf.cline() > 0) {
+			auto cl = buf.cline();
+			auto cx = std::distance(buf.line(cl), buf.cursor_);
+			for (buf.cursor_ = buf.line(cl - 1); buf.cursor_x() < cx; buf.cursor_++)
+				;
 			buf.adjust_start();
 		} else if (direction == "down") {
-			++buf.cursor;
-			if (buf.cursor == buf.chars.end())
-				--buf.cursor;
+			auto cl = buf.cline();
+			auto cx = std::distance(buf.line(cl), buf.cursor_);
+			for (buf.cursor_ = buf.line(cl + 1); buf.cursor_x() < cx; buf.cursor_++)
+				;
 			buf.adjust_start();
 		}
 		win.update_file();
 	} else if (arg0 == "0") {
-		buf.cursor = buf.chars.begin();
+		buf.cursor_ = buf.begin();
 		win.update_file();
 	} else if (arg0 == "100") {
-		//buf.cursor = buf.chars.find(100);
-		//if (buf.cursor == buf.chars.end())
-		buf.cursor = --buf.chars.upper_bound(100);
+		buf.cursor_ = buf.line(100);
 		win.update_file();
 	} else if (arg0 == "refresh") {
 		win.update();
@@ -78,9 +80,9 @@ void handle_command(const std::string &command)
 		std::string direction;
 		if (args >> direction) {
 			if (direction == "up") {
-				buf.set_start(std::max(0, buf.chars.index(buf.start) - LINES + 2));
+				buf.set_start(std::max(0, buf.line(buf.start()) - LINES + 2));
 			} else if (direction == "down") {
-				buf.set_start(buf.chars.index(buf.start) + LINES - 2);
+				buf.set_start(buf.line(buf.start()) + LINES - 2);
 			}
 			win.update_file();
 		}
@@ -88,38 +90,43 @@ void handle_command(const std::string &command)
 		std::string direction;
 		if (args >> direction) {
 			if (direction == "up") {
-				buf.set_start(std::max(0, buf.chars.index(buf.start) - LINES / 2 + 1));
+				buf.set_start(std::max(0, buf.line(buf.start()) - LINES / 2 + 1));
 			} else if (direction == "down") {
-				buf.set_start(buf.chars.index(buf.start) + LINES / 2 - 1);
+				buf.set_start(buf.line(buf.start()) + LINES / 2 - 1);
 			}
 			win.update_file();
 		}
 	} else if (arg0 == "n_0") {
-		buf.cursor_x = 0;
+		buf.cursor_ = buf.line(buf.cline());
 		win.update_file();
 	} else if (arg0 == "n_$") {
-		buf.cursor_x = std::max(0, (int)buf.cursor->size() - 2);
+		while (*buf.cursor() != '\n')
+			buf.cursor_++;
+		buf.cursor_--;
 		win.update_file();
 	} else if (arg0 == "n_i") {
-		buf.cursor_x = std::min((int)buf.cursor->size() - 1, buf.cursor_x);
 		mode = mode_type::INSERT;
 		win.update();
 	} else if (arg0 == "n_a") {
-		buf.cursor_x = std::min((int)buf.cursor->size() - 1, buf.cursor_x + 1);
+		buf.cursor_++;
 		mode = mode_type::INSERT;
 		win.update();
 	} else if (arg0 == "n_I") {
-		buf.cursor_x = 0;
+		while(buf.cursor_ != buf.end() && *buf.cursor() != '\n')
+			buf.cursor_--;
+		buf.cursor_++;
 		mode = mode_type::INSERT;
 		win.update();
 	} else if (arg0 == "n_A") {
-		buf.cursor_x = buf.cursor->size() - 1;
+		while(++buffer::const_iterator(buf.cursor_) != buf.end() && *buf.cursor() != '\n')
+			buf.cursor_++;
 		mode = mode_type::INSERT;
 		win.update();
 	} else if (arg0 != "misc") {
 		throw std::invalid_argument("unknown command: " + arg0);
 	} else if (!(args >> arg1)) {
 		throw std::invalid_argument("need argument: " + arg0);
+		/*
 	} else if (arg1 == "i:backspace") {
 		if (buf.cursor_x > 0) {
 			buf.cursor->erase(buf.cursor_x--, 1);
@@ -137,6 +144,7 @@ void handle_command(const std::string &command)
 			buf.cursor_x = std::min(std::max((int)buf.cursor->size() - 2, 0), std::max(buf.cursor_x, 1) - 1);
 		mode = mode_type::NORMAL;
 		win.update();
+	*/
 	} else if (arg1 == "c:return") {
 		mode = mode_type::NORMAL;
 		wclear(win.cmdline);
