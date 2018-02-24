@@ -52,12 +52,12 @@ void handle_command(const std::string &command)
 			buf.adjust_start();
 		} else if (direction == "down") {
 			auto cl = buf.cline();
-			buf.cursor_++;
+			//buf.cursor_++;
 			auto cx = std::distance(buf.line(cl), buf.cursor_);
 			std::cout << cl << " " << cx << std::endl;
 			for (buf.cursor_ = buf.line(cl + 1); *buf.cursor() != '\n' && buf.cursor_x() < cx; buf.cursor_++)
 				;
-			buf.cursor_--;
+			//buf.cursor_--;
 			buf.adjust_start();
 		}
 		win.update_file();

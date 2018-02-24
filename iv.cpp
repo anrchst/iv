@@ -235,9 +235,9 @@ void Window::update_file()
 	}
 	int cline = buf.cline();
 	wmove(file, 5, 0);
-	std::ostringstream o;
-	o << cline << std::endl;
-	waddstr(file, o.str().c_str());
+	//std::ostringstream o;
+	//o << cline << std::endl;
+	//waddstr(file, o.str().c_str());
 	wmove(file, cline - firstline, std::distance(buf.line(buf.cline()), buf.cursor()));
 }
 

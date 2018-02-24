@@ -53,16 +53,8 @@ struct text : public iv::list<T, returns_tag<T>>
 	int line(const_iterator i) const
 	{
 		int ret = 0;
-		bool count = true;
-		if (i == end())
-			return i.left().stat();
-		for (; i != end(); i = i.parent()) {
-			if (count)
-				ret += i.left().stat();
-			count = (i != i.parent().left());
-			if (count)
-				ret += (*i == '\n');
-		}
+		for (auto j = begin(); j != i; j++)
+			ret += (*j == T('\n'));
 		return ret;
 	}
 

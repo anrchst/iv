@@ -19,9 +19,10 @@ int main()
 		assert(t.line(f) == 1);
 		f++;
 	}
-	std::cout << std::distance(t.begin(), t.line(0)) << std::endl;
 	assert(std::distance(t.begin(), t.line(0)) == 0);
 	assert(*--f == '\n');
 	assert(t.line(f) == 1);
+	std::cout << t.line(--t.end()) << std::endl;
+	assert(t.line(--t.end()) == 9);
 	t.check();
 }
