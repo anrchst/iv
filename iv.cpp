@@ -99,13 +99,13 @@ struct buffer : public text<char>
 			++start_;
 		while (cline() < sline())
 			--start_;
+		start_ = line(sline());
 	}
 
-	void set_start(unsigned _start)
+	void set_start(int _start)
 	{
-		if (line(_start) == begin())
-			return;
-		start_ = line(_start - 1);
+		//std::cout << "!!!" << _start << std::endl;
+		start_ = line(_start);
 		while (cline() >= sline() + LINES - 2)
 			--cursor_;
 		while (cline() < sline())
@@ -234,10 +234,13 @@ void Window::update_file()
 		waddch(file, *i);
 	}
 	int cline = buf.cline();
+	/*
 	wmove(file, 5, 0);
-	//std::ostringstream o;
-	//o << cline << std::endl;
-	//waddstr(file, o.str().c_str());
+	std::ostringstream o;
+	//o << cline << *buf.cursor() << std::endl;
+	o << buf.line(buf.start()) << std::endl;
+	waddstr(file, o.str().c_str());
+	*/
 	wmove(file, cline - firstline, std::distance(buf.line(buf.cline()), buf.cursor()));
 }
 

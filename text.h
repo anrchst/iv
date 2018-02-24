@@ -50,6 +50,11 @@ struct text : public iv::list<T, returns_tag<T>>
 		}
 	}
 
+	int lines() const
+	{
+		return root().stat();
+	}
+
 	int line(const_iterator i) const
 	{
 		int ret = 0;
@@ -72,8 +77,10 @@ struct text : public iv::list<T, returns_tag<T>>
 	{
 		if (index < 0)
 			return end();
+		else if (index == 0)
+			return begin();
 		if (root().stat() <= index)
-			return end();
+			return line(lines() - 1);
 		const_iterator ret = root();
 		while (ret.left().stat() != index) {
 			if (ret.left().stat() < index) {
@@ -82,8 +89,8 @@ struct text : public iv::list<T, returns_tag<T>>
 			} else
 				ret = ret.left();
 		}
-		while (ret != end() && *ret != T('\n'))
-			--ret;
+		while (*--ret != T('\n'))
+			;
 		return ++ret;
 	}
 	iterator line(int index)
