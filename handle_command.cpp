@@ -130,10 +130,11 @@ void handle_command(const std::string &command)
 		throw std::invalid_argument("need argument: " + arg0);
 		/*
 	} else if (arg1 == "i:backspace") {
-		if (buf.cursor_x > 0) {
-			buf.cursor->erase(buf.cursor_x--, 1);
+		if (buf.cursor_x() > 0) {
+			buf.erase(buf.cursor()--);
 			win.update_file();
 		}
+		*/
 	} else if (arg1 == "c:backspace") {
 		if (win.command.empty())
 			mode = mode_type::NORMAL;
@@ -142,11 +143,13 @@ void handle_command(const std::string &command)
 		win.update_cmdline();
 		win.activate_window();
 	} else if (arg1 == "escape") {
-		if (mode == mode_type::INSERT)
-			buf.cursor_x = std::min(std::max((int)buf.cursor->size() - 2, 0), std::max(buf.cursor_x, 1) - 1);
+		if (mode == mode_type::INSERT) {
+			auto c = buf.line(buf.cline());
+			std::advance(c, std::min(std::max(buf.cline_size() - 2, 0), std::max(buf.cursor_x(), 1) - 1));
+			buf.cursor_ = c;
+		}
 		mode = mode_type::NORMAL;
 		win.update();
-	*/
 	} else if (arg1 == "c:return") {
 		mode = mode_type::NORMAL;
 		wclear(win.cmdline);

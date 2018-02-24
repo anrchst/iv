@@ -260,7 +260,7 @@ public:
 	{
 		return parent() == *this;
 	}
-	difference_type stat() const
+	typename StatTag::value_type stat() const
 	{
 		return static_cast<const internal::tree<T,StatTag> *>(this->get())->stat();
 	}
