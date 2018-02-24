@@ -69,17 +69,19 @@ struct text : public iv::list<T, returns_tag<T>>
 	const_iterator line(int index) const
 	{
 		if (index < 0)
-			index = 0;
+			return end();
 		if (root().stat() <= index)
 			return end();
 		const_iterator ret = root();
 		while (ret.left().stat() != index) {
 			if (ret.left().stat() < index) {
-				index -= ret.left().stat() + 1;
+				index -= ret.left().stat() + (*ret == T('\n'));
 				ret = ret.right();
 			} else
 				ret = ret.left();
 		}
+		while (ret != end() && *ret != T('\n'))
+			--ret;
 		return ++ret;
 	}
 	iterator line(int index)

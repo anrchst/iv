@@ -294,7 +294,7 @@ public:
 			while (right().get())
 				*this = right();
 		} else {
-			while (*this == parent().left())
+			while (*this != parent().right())
 				*this = parent();
 			*this = parent();
 		}
