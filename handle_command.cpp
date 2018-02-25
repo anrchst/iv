@@ -47,7 +47,7 @@ void handle_command(const std::string &command)
 		else if (direction == "up" && buf.cline() > 0) {
 			auto cl = buf.cline();
 			auto cx = std::distance(buf.line(cl), buf.cursor_);
-			for (buf.cursor_ = buf.line(cl - 1); *buf.cursor() != '\n' && buf.cursor_x() < cx; ++buf.cursor_)
+			for (buf.cursor_ = buf.line(cl - 1); buf.cursor() != buf.end() && *buf.cursor() != '\n' && buf.cursor_x() < cx; ++buf.cursor_)
 				;
 			buf.adjust_start();
 		} else if (direction == "down") {

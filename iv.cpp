@@ -95,7 +95,14 @@ void Window::update_file()
 	//int x = 0;
 	//for (std::list<chunk>::const_iterator i = buf.std::list<chunk>::begin(); i != buf.std::list<chunk>::end(); ++i)
 	//	std::cout << ">" << i->size() << std::endl;
-	for (buffer::const_iterator i = buf.start(); i.list_iter() != buf.std::list<chunk>::end()/*buf.end()*/; ++i) {
+	if (buf.empty()) {
+		assert(__gnu_cxx::rope<char>::const_iterator() == (__gnu_cxx::rope<char>::const_iterator)__gnu_cxx::rope<char>::iterator());
+		assert(buf.begin() == buf.end());
+		assert(buf.start().list_iter() == buf.std::list<chunk>::end());
+		assert(buf.start().chunk_iter() == __gnu_cxx::rope<char>::iterator());
+		assert(buf.start() == buf.end());
+	}
+	for (buffer::const_iterator i = buf.start(); i != buf.end(); ++i) {
 		assert(i.list_iter() != buf.std::list<chunk>::end());
 		assert(i.list_iter()->end() != i.chunk_iter());
 		waddch(file, *i);

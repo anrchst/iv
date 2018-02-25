@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cassert>
 #include <cstdlib> // std::rand
 #include <iterator>
 #include <list>
@@ -7,18 +8,21 @@
 struct buffer : public std::list<chunk>
 {
 	struct const_iterator : public std::iterator<std::random_access_iterator_tag, char> {
+		const buffer *b;
 		std::list<chunk>::const_iterator list_it;
 		chunk::const_iterator chunk_it;
 
 		const_iterator() { }
-		const_iterator(std::list<chunk>::const_iterator l, chunk::const_iterator c)
-			: list_it(l) , chunk_it(c)
+		const_iterator(const buffer *_b, std::list<chunk>::const_iterator l, chunk::const_iterator c)
+			: b(_b), list_it(l) , chunk_it(c)
 		{
 		}
 		const_iterator &operator ++() {
 			++chunk_it;
-			if (chunk_it == list_it->end())
-				chunk_it = (++list_it)->begin();
+			if (chunk_it == list_it->end()) {
+				++list_it;
+				chunk_it = (list_it == b->std::list<chunk>::end()) ? __gnu_cxx::rope<char>::const_iterator() : list_it->begin();
+			}
 			return *this;
 		}
 		const_iterator &operator --() {
@@ -67,8 +71,8 @@ struct buffer : public std::list<chunk>
 	struct iterator : public const_iterator
 	{
 		iterator() { }
-		iterator(std::list<chunk>::iterator l, chunk::iterator c)
-			: const_iterator(l, c)
+		iterator(buffer *_b, std::list<chunk>::iterator l, chunk::iterator c)
+			: const_iterator(_b, l, c)
 		{
 		}
 
@@ -79,7 +83,9 @@ struct buffer : public std::list<chunk>
 	iterator start_, cursor_;
 	std::string filename;
 
-	buffer() : start_(begin()), cursor_(begin()) {}
+	buffer() : start_(begin()), cursor_(begin()) {
+		assert(start_ == end());
+	}
 	buffer(const std::string _filename) : filename(_filename)
 	{
 		r();
@@ -88,15 +94,15 @@ struct buffer : public std::list<chunk>
 	const_iterator begin() const {
 		auto b = std::list<chunk>::begin();
 		auto e = std::list<chunk>::end();
-		return const_iterator(b, b == e ? __gnu_cxx::rope<char>::const_iterator() : b->begin());
+		return const_iterator(this, b, b == e ? __gnu_cxx::rope<char>::const_iterator() : b->begin());
 	}
 	iterator begin() {
 		std::list<chunk>::iterator b = std::list<chunk>::begin();
 		std::list<chunk>::iterator e = std::list<chunk>::end();
-		return iterator(b, b == e ? __gnu_cxx::rope<char>::iterator() : b->mutable_begin());
+		return iterator(this, b, b == e ? __gnu_cxx::rope<char>::iterator() : b->mutable_begin());
 	}
-	const_iterator end() const { return const_iterator(std::list<chunk>::end(), __gnu_cxx::rope<char>::const_iterator()); }
-	iterator end() { return iterator(std::list<chunk>::end(), __gnu_cxx::rope<char>::iterator()); }
+	const_iterator end() const { return const_iterator(this, std::list<chunk>::end(), __gnu_cxx::rope<char>::const_iterator()); }
+	iterator end() { return iterator(this, std::list<chunk>::end(), __gnu_cxx::rope<char>::iterator()); }
 	const_iterator start() const { return start_; }
 	iterator start() { return start_; }
 	const_iterator cursor() const { return cursor_; }
@@ -160,7 +166,7 @@ struct buffer : public std::list<chunk>
 		chunk::const_iterator j = i->begin();
 		while (n)
 			n -= (*(j++) == '\n');
-		return const_iterator(i, j);
+		return const_iterator(this, i, j);
 	}
 
 	iterator line(int n) {
