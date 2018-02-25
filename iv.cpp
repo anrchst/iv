@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cassert>
 #include <cctype> /* isprint */
 #include <cstdlib> /* exit() */
 #include <fstream>
@@ -15,152 +16,13 @@
 #include <ncurses.h>
 #include <signal.h>
 #include <stdio.h>
-#include "text.h"
+#include "buffer.h"
 
 #ifndef CTRL
 #define CTRL(c) ((c) & 037)
 #endif
 
 const int tab_size = 8;
-
-struct buffer : public text<char>
-{
-	typedef text<char> parent_type;
-	iterator start_, cursor_;
-	std::string filename;
-
-	buffer() : start_(end()), cursor_(end()) {}
-	buffer(const std::string _filename) : filename(_filename)
-	{
-		r();
-	}
-
-	const_iterator start() const
-	{
-		return start_;
-	}
-
-	iterator start()
-	{
-		return start_;
-	}
-
-	const_iterator cursor() const
-	{
-		return cursor_;
-	}
-
-	iterator cursor()
-	{
-		return cursor_;
-	}
-
-	int cursor_x() const
-	{
-		return std::distance(line(cline()), cursor());
-	}
-
-	template <class Iterator>
-	void assign(Iterator begin, Iterator end)
-	{
-		clear();
-		for (; begin != end; ++begin) {
-			switch (*begin) {
-			case '\t':
-				for (int i = 0; i < tab_size; i++)
-					push_back(' ');
-				break;
-			default:
-				push_back(*begin);
-				break;
-			}
-		}
-		start_ = cursor_ = this->begin();
-	}
-
-	int cline() const
-	{
-		return line(cursor());
-	}
-
-	int sline() const
-	{
-		return line(start());
-	}
-
-	int cline_size() const
-	{
-		return std::distance(line(cline()), line(cline() + 1));
-	}
-
-	void adjust_start()
-	{
-		while (cline() >= sline() + LINES - 2)
-			++start_;
-		while (cline() < sline())
-			--start_;
-		start_ = line(sline());
-	}
-
-	void set_start(int _start)
-	{
-		//std::cout << "!!!" << _start << std::endl;
-		start_ = line(_start);
-		while (cline() >= sline() + LINES - 2)
-			--cursor_;
-		while (cline() < sline())
-			++cursor_;
-	}
-
-	void read(std::istream &stream)
-	{
-		assign(std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>());
-	}
-
-	void write(std::ostream &stream)
-	{
-		for (auto c : *this)
-			stream << c;
-	}
-
-	void r(std::string _filename = std::string())
-	{
-		if (_filename.empty())
-			_filename = filename;
-		std::ifstream stream(_filename);
-		stream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-		read(stream);
-	}
-
-	void o(const std::string &_filename = std::string())
-	{
-		if (_filename.empty())
-			throw std::invalid_argument(":o needs an argument");
-		std::ifstream stream(_filename);
-		stream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-		read(stream);
-		filename = _filename;
-	}
-
-	void w(std::string _filename = std::string())
-	{
-		if (_filename.empty())
-			_filename = filename;
-		std::ofstream stream(_filename);
-		stream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-		write(stream);
-	}
-
-	void saveas(const std::string &_filename = std::string())
-	{
-		if (_filename.empty())
-			throw std::invalid_argument(":saveas needs an argument");
-		std::ofstream stream(_filename);
-		stream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-		write(stream);
-		filename = _filename;
-	}
-} buf;
 
 enum class mode_type {
 	NORMAL,
@@ -230,7 +92,12 @@ void Window::update_file()
 	wclear(file);
 	int firstline = buf.sline();
 	wmove(file, 0, 0);
-	for (buffer::const_iterator i = buf.start(); i != buf.end(); ++i) {
+	//int x = 0;
+	//for (std::list<chunk>::const_iterator i = buf.std::list<chunk>::begin(); i != buf.std::list<chunk>::end(); ++i)
+	//	std::cout << ">" << i->size() << std::endl;
+	for (buffer::const_iterator i = buf.start(); i.list_iter() != buf.std::list<chunk>::end()/*buf.end()*/; ++i) {
+		assert(i.list_iter() != buf.std::list<chunk>::end());
+		assert(i.list_iter()->end() != i.chunk_iter());
 		waddch(file, *i);
 	}
 	int cline = buf.cline();
@@ -322,7 +189,7 @@ void handle_key()
 			break;
 		if (mode == mode_type::INSERT && std::isprint(c)) {
 			buf.insert(buf.cursor_, c);
-			buf.cursor_++;
+			++buf.cursor_;
 			win.update_file();
 			break;
 		}

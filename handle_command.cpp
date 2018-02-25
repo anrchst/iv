@@ -41,13 +41,13 @@ void handle_command(const std::string &command)
 		if (!(args >> direction))
 			throw std::invalid_argument(":cursor needs an argument");
 		if (direction == "left" && buf.cursor_x() > 0)
-			buf.cursor_--;
+			--buf.cursor_;
 		else if (direction == "right" && buf.cursor_x() < (int)buf.cline_size() - 1 - (mode == mode_type::NORMAL))
-			buf.cursor_++;
+			++buf.cursor_;
 		else if (direction == "up" && buf.cline() > 0) {
 			auto cl = buf.cline();
 			auto cx = std::distance(buf.line(cl), buf.cursor_);
-			for (buf.cursor_ = buf.line(cl - 1); *buf.cursor() != '\n' && buf.cursor_x() < cx; buf.cursor_++)
+			for (buf.cursor_ = buf.line(cl - 1); *buf.cursor() != '\n' && buf.cursor_x() < cx; ++buf.cursor_)
 				;
 			buf.adjust_start();
 		} else if (direction == "down") {
@@ -55,7 +55,7 @@ void handle_command(const std::string &command)
 			auto cx = std::distance(buf.line(cl), buf.cursor_);
 			std::cout << cl << " " << cx << std::endl;
 			if (cl < buf.lines() - 1)
-				for (buf.cursor_ = buf.line(cl + 1); *buf.cursor() != '\n' && buf.cursor_x() < cx; buf.cursor_++)
+				for (buf.cursor_ = buf.line(cl + 1); *buf.cursor() != '\n' && buf.cursor_x() < cx; ++buf.cursor_)
 					;
 			buf.adjust_start();
 		}
@@ -103,25 +103,25 @@ void handle_command(const std::string &command)
 		win.update_file();
 	} else if (arg0 == "n_$") {
 		while (*buf.cursor() != '\n')
-			buf.cursor_++;
-		buf.cursor_--;
+			++buf.cursor_;
+		--buf.cursor_;
 		win.update_file();
 	} else if (arg0 == "n_i") {
 		mode = mode_type::INSERT;
 		win.update();
 	} else if (arg0 == "n_a") {
-		buf.cursor_++;
+		++buf.cursor_;
 		mode = mode_type::INSERT;
 		win.update();
 	} else if (arg0 == "n_I") {
 		while(buf.cursor_ != buf.end() && *buf.cursor() != '\n')
-			buf.cursor_--;
-		buf.cursor_++;
+			--buf.cursor_;
+		++buf.cursor_;
 		mode = mode_type::INSERT;
 		win.update();
 	} else if (arg0 == "n_A") {
 		while(++buffer::const_iterator(buf.cursor_) != buf.end() && *buf.cursor() != '\n')
-			buf.cursor_++;
+			++buf.cursor_;
 		mode = mode_type::INSERT;
 		win.update();
 	} else if (arg0 != "misc") {
