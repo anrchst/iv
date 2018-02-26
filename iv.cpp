@@ -194,14 +194,11 @@ void handle_key()
 			break;
 		if (mode == mode_type::COMMAND && command_bindings.handle(c))
 			break;
-		/*
 		if (mode == mode_type::INSERT && std::isprint(c)) {
-			buf.insert(buf.cursor_, c);
-			++buf.cursor_;
+			buf.insert(buf.cursor(), c);
 			win.update_file();
 			break;
 		}
-		*/
 		if (mode == mode_type::COMMAND && std::isprint(c)) {
 			char string[] = {(char)c, '\0'};
 			win.command.push_back(c);

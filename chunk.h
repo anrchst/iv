@@ -28,9 +28,14 @@ struct mutable_container_chunk : public Parent
 protected:
 	struct preserve_mark_positions {
 		mutable_container_chunk *c;
-		std::map<mark_type, size_t> p;
+		typename Parent::difference_type where;
+		typename Parent::difference_type count;
+		std::map<mark_type, typename Parent::difference_type> p;
 
-		preserve_mark_positions(mutable_container_chunk *_c) : c(_c) {
+		preserve_mark_positions(mutable_container_chunk *_c,
+			typename Parent::difference_type _where,
+			typename Parent::difference_type _count
+		) : c(_c), where(_where), count(_count) {
 			for (const auto e : c->marks)
 				p.insert(std::make_pair(
 					e.first,
@@ -39,7 +44,10 @@ protected:
 		}
 		~preserve_mark_positions() {
 			for (const auto e : p)
-				c->marks[e.first] = c->begin() + e.second;
+				if (e.second >= where)
+					c->marks[e.first] = c->begin() + e.second + count;
+				else
+					c->marks[e.first] = c->begin() + e.second;
 		}
 	};
 
@@ -61,10 +69,21 @@ public:
 	void push_back(value_type c)
 	{
 		{
-			preserve_mark_positions _(this);
+			preserve_mark_positions _(this, 0, 0);
 			parent_type::push_back(c);
 		}
 		lines += (c == '\n');
+	}
+
+	iterator insert(iterator before, value_type c)
+	{
+		iterator ret;
+		{
+			preserve_mark_positions _(this, before - this->begin(), 1);
+			ret = parent_type::insert(before, c);
+		}
+		lines += (c == '\n');
+		return ret;
 	}
 
 	const_iterator mark(mark_type m) const

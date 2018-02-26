@@ -283,8 +283,10 @@ struct buffer : public std::list<chunk>
 
 	iterator insert(iterator i, char c)
 	{
-		if (i == end())
-			i.chunk_it = (--i.list_it)->end();
+		if (i == end()) {
+			i.list_it = C::insert(c_end(), chunk());
+			i.chunk_it = i.list_it->end();
+		}
 		i.chunk_it = i.list_iter()->insert(i.chunk_iter(), c);
 		return i;
 	}
