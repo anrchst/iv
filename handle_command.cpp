@@ -41,30 +41,35 @@ void handle_command(const std::string &command)
 		if (!(args >> direction))
 			throw std::invalid_argument(":cursor needs an argument");
 		if (direction == "left" && buf.cursor_x() > 0)
-			--buf.cursor_;
+			buf.mark("_", --buf.mark("_"));
 		else if (direction == "right" && buf.cursor_x() < (int)buf.cline_size() - 1 - (mode == mode_type::NORMAL))
-			++buf.cursor_;
+			buf.mark("_", ++buf.mark("_"));
 		else if (direction == "up" && buf.cline() > 0) {
 			auto cl = buf.cline();
-			auto cx = std::distance(buf.line(cl), buf.cursor_);
-			for (buf.cursor_ = buf.line(cl - 1); buf.cursor() != buf.end() && *buf.cursor() != '\n' && buf.cursor_x() < cx; ++buf.cursor_)
+			auto cx = std::distance(buf.line(cl), buf.cursor());
+			buffer::iterator c;
+			for (c = buf.line(cl - 1); c != buf.end() && *c != '\n' && buf.x(c) < cx; ++c)
 				;
+			buf.mark("_", c);
 			buf.adjust_start();
 		} else if (direction == "down") {
 			auto cl = buf.cline();
-			auto cx = std::distance(buf.line(cl), buf.cursor_);
+			auto cx = std::distance(buf.line(cl), buf.cursor());
 			std::cout << cl << " " << cx << std::endl;
-			if (cl < buf.lines() - 1)
-				for (buf.cursor_ = buf.line(cl + 1); *buf.cursor() != '\n' && buf.cursor_x() < cx; ++buf.cursor_)
+			if (cl < buf.lines() - 1) {
+				buffer::iterator c;
+				for (c = buf.line(cl + 1); *c != '\n' && buf.x(c) < cx; ++c)
 					;
+				buf.mark("_", c);
+			}
 			buf.adjust_start();
 		}
 		win.update_file();
 	} else if (arg0 == "0") {
-		buf.cursor_ = buf.begin();
+		buf.mark("_", buf.begin());
 		win.update_file();
 	} else if (arg0 == "100") {
-		buf.cursor_ = buf.line(100);
+		buf.mark("_", buf.line(100));
 		win.update_file();
 	} else if (arg0 == "refresh") {
 		win.update();
@@ -99,29 +104,30 @@ void handle_command(const std::string &command)
 			win.update_file();
 		}
 	} else if (arg0 == "n_0") {
-		buf.cursor_ = buf.line(buf.cline());
+		buf.mark("_", buf.line(buf.cline()));
 		win.update_file();
 	} else if (arg0 == "n_$") {
-		while (*buf.cursor() != '\n')
-			++buf.cursor_;
-		--buf.cursor_;
+		buffer::iterator c = buf.cursor();
+		while (*c != '\n')
+			++c;
+		buf.mark("_", --c);
 		win.update_file();
 	} else if (arg0 == "n_i") {
 		mode = mode_type::INSERT;
 		win.update();
 	} else if (arg0 == "n_a") {
-		++buf.cursor_;
+		buf.mark("_", ++buf.cursor());
 		mode = mode_type::INSERT;
 		win.update();
 	} else if (arg0 == "n_I") {
-		while(buf.cursor_ != buf.end() && *buf.cursor() != '\n')
-			--buf.cursor_;
-		++buf.cursor_;
+		buf.mark("_", buf.line(buf.cline()));
 		mode = mode_type::INSERT;
 		win.update();
 	} else if (arg0 == "n_A") {
-		while(++buffer::const_iterator(buf.cursor_) != buf.end() && *buf.cursor() != '\n')
-			++buf.cursor_;
+		buffer::iterator c = buf.cursor();
+		while (*c != '\n')
+			++c;
+		buf.mark("_", c);
 		mode = mode_type::INSERT;
 		win.update();
 	} else if (arg0 != "misc") {
@@ -146,7 +152,7 @@ void handle_command(const std::string &command)
 		if (mode == mode_type::INSERT) {
 			auto c = buf.line(buf.cline());
 			std::advance(c, std::min(std::max(buf.cline_size() - 2, 0), std::max(buf.cursor_x(), 1) - 1));
-			buf.cursor_ = c;
+			buf.mark("_", c);
 		}
 		mode = mode_type::NORMAL;
 		win.update();

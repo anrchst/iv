@@ -96,10 +96,10 @@ void Window::update_file()
 	//for (std::list<chunk>::const_iterator i = buf.std::list<chunk>::begin(); i != buf.std::list<chunk>::end(); ++i)
 	//	std::cout << ">" << i->size() << std::endl;
 	if (buf.empty()) {
-		assert(__gnu_cxx::rope<char>::const_iterator() == (__gnu_cxx::rope<char>::const_iterator)__gnu_cxx::rope<char>::iterator());
+		assert(chunk::const_iterator() == (chunk::const_iterator)chunk::iterator());
 		assert(buf.begin() == buf.end());
 		assert(buf.start().list_iter() == buf.std::list<chunk>::end());
-		assert(buf.start().chunk_iter() == __gnu_cxx::rope<char>::iterator());
+		assert(buf.start().chunk_iter() == chunk::iterator());
 		assert(buf.start() == buf.end());
 	}
 	for (buffer::const_iterator i = buf.start(); i != buf.end(); ++i) {
@@ -194,12 +194,14 @@ void handle_key()
 			break;
 		if (mode == mode_type::COMMAND && command_bindings.handle(c))
 			break;
+		/*
 		if (mode == mode_type::INSERT && std::isprint(c)) {
 			buf.insert(buf.cursor_, c);
 			++buf.cursor_;
 			win.update_file();
 			break;
 		}
+		*/
 		if (mode == mode_type::COMMAND && std::isprint(c)) {
 			char string[] = {(char)c, '\0'};
 			win.command.push_back(c);

@@ -3,33 +3,45 @@
 #include <cstdlib> // std::rand
 #include <iterator>
 #include <list>
+#include <stdexcept>
 #include "chunk.h"
 
 struct buffer : public std::list<chunk>
 {
+	typedef std::list<chunk> C;
+
 	struct const_iterator : public std::iterator<std::random_access_iterator_tag, char> {
 		const buffer *b;
-		std::list<chunk>::const_iterator list_it;
+		C::const_iterator list_it;
 		chunk::const_iterator chunk_it;
 
+		bool at_end() const { return list_it == b->C::end(); }
+
 		const_iterator() { }
-		const_iterator(const buffer *_b, std::list<chunk>::const_iterator l, chunk::const_iterator c)
+		const_iterator(const buffer *_b, C::const_iterator l, chunk::const_iterator c)
 			: b(_b), list_it(l) , chunk_it(c)
 		{
 		}
 		const_iterator &operator ++() {
+			assert(chunk_it != list_it->end());
+			assert(!at_end());
+			assert(chunk_it != chunk::const_iterator());
 			++chunk_it;
 			if (chunk_it == list_it->end()) {
 				++list_it;
-				chunk_it = (list_it == b->std::list<chunk>::end()) ? __gnu_cxx::rope<char>::const_iterator() : list_it->begin();
+				chunk_it = at_end() ? chunk::const_iterator() : list_it->begin();
 			}
 			return *this;
 		}
 		const_iterator &operator --() {
-			if (chunk_it == list_it->begin())
-				chunk_it = --(--list_it)->end();
-			else
-				--chunk_it;
+			// also skip empty chunks
+			int i = 0;
+			while (list_it != b->c_begin() && chunk_it == list_it->begin())
+				chunk_it = (--list_it)->end(), ++i;
+			if (list_it == b->c_begin() && chunk_it == list_it->begin())
+				throw std::runtime_error("decrementing begin() iterator");
+			assert(chunk_it > list_it->begin());
+			--chunk_it;
 			return *this;
 		}
 
@@ -38,8 +50,8 @@ struct buffer : public std::list<chunk>
 			auto x = std::min(n, list_it->end() - chunk_it);
 			n -= x;
 			chunk_it += x;
-			while (n >= (++list_it)->chars)
-				n -= list_it->chars;
+			while (n >= (difference_type)(++list_it)->size())
+				n -= list_it->size();
 			chunk_it = list_it->begin() + n;
 			if (chunk_it == list_it->end())
 				chunk_it = (++list_it)->begin();
@@ -50,9 +62,9 @@ struct buffer : public std::list<chunk>
 			if (list_it == other.list_it)
 				return chunk_it - other.chunk_it;
 			difference_type ret = list_it->end() - chunk_it;
-			while (++list_it != other.list_it)
-				ret += list_it->lines;
-			return ret + (other.chunk_it - list_it->begin());
+			for (auto i = list_it; i != other.list_it; ++i)
+				ret += i->size();
+			return ret + (other.chunk_it - other.list_it->begin());
 		}
 
 		bool operator ==(const_iterator other) {
@@ -64,88 +76,158 @@ struct buffer : public std::list<chunk>
 
 		char operator *() { return *chunk_it; }
 
-		std::list<chunk>::const_iterator list_iter() const { return list_it; };
+		C::const_iterator list_iter() const { return list_it; };
 		chunk::const_iterator chunk_iter() const { return chunk_it; };
 	};
 
 	struct iterator : public const_iterator
 	{
 		iterator() { }
-		iterator(buffer *_b, std::list<chunk>::iterator l, chunk::iterator c)
-			: const_iterator(_b, l, c)
+	
+	private:
+		iterator(const const_iterator &other)
+			: const_iterator(other)
 		{
 		}
 
-		std::list<chunk>::iterator list_iter() { return reinterpret_cast<std::list<chunk>::iterator &>(list_it); };
-		chunk::iterator chunk_iter() { return reinterpret_cast<chunk::iterator &>(chunk_it); };
+	public:
+		C::iterator list_iter() const {
+			return reinterpret_cast<const C::iterator &>(list_it);
+		}
+		chunk::iterator chunk_iter() const
+		{
+			if (at_end())
+				return chunk::iterator();
+			else {
+				auto ret = list_iter()->begin();
+				std::advance(ret, std::distance(list_it->cbegin(), chunk_it));
+				return ret;
+			}
+		};
+		iterator &operator ++() {
+			const_iterator::operator ++();
+			return *this;
+		}
+		iterator &operator --() {
+			const_iterator::operator --();
+			return *this;
+		}
 	};
 
-	iterator start_, cursor_;
 	std::string filename;
 
-	buffer() : start_(begin()), cursor_(begin()) {
-		assert(start_ == end());
+	buffer() {
 	}
 	buffer(const std::string _filename) : filename(_filename)
 	{
 		r();
 	}
 
+	typename C::const_iterator c_begin() const { return C::begin(); }
+	typename C::const_iterator c_end() const { return C::end(); }
+	typename C::iterator c_begin() { return C::begin(); }
+	typename C::iterator c_end() { return C::end(); }
+
 	const_iterator begin() const {
-		auto b = std::list<chunk>::begin();
-		auto e = std::list<chunk>::end();
-		return const_iterator(this, b, b == e ? __gnu_cxx::rope<char>::const_iterator() : b->begin());
+		auto b = c_begin();
+		auto e = c_end();
+		return const_iterator(this, b, b == e ? chunk::const_iterator() : b->begin());
 	}
-	iterator begin() {
-		std::list<chunk>::iterator b = std::list<chunk>::begin();
-		std::list<chunk>::iterator e = std::list<chunk>::end();
-		return iterator(this, b, b == e ? __gnu_cxx::rope<char>::iterator() : b->mutable_begin());
+	const_iterator end() const {
+		return const_iterator(this, C::end(), chunk::const_iterator());
 	}
-	const_iterator end() const { return const_iterator(this, std::list<chunk>::end(), __gnu_cxx::rope<char>::const_iterator()); }
-	iterator end() { return iterator(this, std::list<chunk>::end(), __gnu_cxx::rope<char>::iterator()); }
-	const_iterator start() const { return start_; }
-	iterator start() { return start_; }
-	const_iterator cursor() const { return cursor_; }
-	iterator cursor() { return cursor_; }
+
+	iterator begin()
+	{
+		const buffer *t = this;
+		const_iterator ret = t->begin();
+		return reinterpret_cast<const iterator &>(ret);
+	}
+
+	iterator end()
+	{
+		const buffer *t = this;
+		const_iterator ret = t->end();
+		return reinterpret_cast<const iterator &>(ret);
+	}
+
+	const_iterator mark(chunk::mark_type m) const
+	{
+		for (auto i = c_begin(); i != c_end(); ++i) {
+			auto mark = i->mark(m);
+			if (mark != i->end())
+				return const_iterator(this, i, mark);
+		}
+		return end();
+	}
+
+	iterator mark(chunk::mark_type m)
+	{
+		const buffer *t = this;
+		const_iterator ret = t->mark(m);
+		return reinterpret_cast<const iterator &>(ret);
+	}
+
+	void mark(chunk::mark_type m, iterator it)
+	{
+		for (auto i = c_begin(); i != c_end(); ++i)
+			i->mark(m, i->end());
+		if (m == "" || m == "_")
+			assert(it != end() || C::empty());
+		if (it != end())
+			it.list_iter()->mark(m, it.chunk_iter());
+	}
+
+	const_iterator start() const { return mark(""); }
+	const_iterator cursor() const { return mark("_"); }
+	iterator start() { return mark(""); }
+	iterator cursor() { return mark("_"); }
+
+	int x(const_iterator i) const
+	{
+		return std::distance(i.list_it->begin(), i.chunk_it);
+	}
+
 	int cursor_x() const
 	{
-		return std::distance(cursor().list_it->begin(), cursor().chunk_it);
+		return x(cursor());
 	}
 
 	template <class Iterator>
-	void assign(Iterator begin, Iterator end)
+	void assign(Iterator b, Iterator e)
 	{
 		clear();
 		push_back(chunk());
-		std::list<chunk>::iterator l0 = std::list<chunk>::begin();
+		C::iterator l0 = C::begin();
 		int l = 0;
-		for (; begin != end; ++begin) {
-			switch (*begin) {
+		for (; b != e; ++b) {
+			switch (*b) {
 			case '\t':
 				for (int i = 0; i < 8; i++)
 					l0->push_back(' ');
 				break;
 			case '\n':
-				l0->push_back(*begin);
+				l0->push_back(*b);
 				if (++l % 10 == 0) {
 					push_back(chunk());
 					++l0;
 				}
 				break;
 			default:
-				l0->push_back(*begin);
+				l0->push_back(*b);
 				break;
 			}
 		}
-		start_ = cursor_ = this->begin();
+		mark("", begin());
+		mark("_", begin());
 	}
 
 	int line(const_iterator i) const
 	{
 		int ret = 0;
-		for (auto j = std::list<chunk>::begin(); j != i.list_iter(); ++j)
+		for (auto j = C::begin(); j != i.list_iter(); ++j)
 			ret += j->lines;
-		if (i.list_iter() != std::list<chunk>::end())
+		if (i.list_iter() != C::end())
 			for (auto j = i.list_iter()->begin(); j != i.list_iter()->end() && j != i.chunk_iter(); ++j)
 				if (*j == '\n')
 					ret++;
@@ -158,10 +240,10 @@ struct buffer : public std::list<chunk>
 
 	const_iterator line(int n) const
 	{
-		std::list<chunk>::const_iterator i = std::list<chunk>::begin();
-		while (i != std::list<chunk>::end() && i->lines <= n)
+		C::const_iterator i = C::begin();
+		while (i != C::end() && i->lines <= n)
 			n -= i++->lines;
-		if (i == std::list<chunk>::end())
+		if (i == C::end())
 			return end();
 		chunk::const_iterator j = i->begin();
 		while (n)
@@ -169,9 +251,11 @@ struct buffer : public std::list<chunk>
 		return const_iterator(this, i, j);
 	}
 
-	iterator line(int n) {
-		const_iterator ci = static_cast<const buffer *>(this)->line(n);
-		return reinterpret_cast<iterator &>(ci);
+	iterator line(int n)
+	{
+		const buffer *t = this;
+		const_iterator ret = t->line(n);
+		return reinterpret_cast<const iterator &>(ret);
 	}
 
 	int cline() const
@@ -199,21 +283,29 @@ struct buffer : public std::list<chunk>
 
 	void adjust_start()
 	{
-		while (cline() >= sline() + LINES - 2)
-			++start_;
-		while (cline() < sline())
-			--start_;
-		start_ = line(sline());
+		iterator s = start();
+		while (cline() >= line(s) + LINES - 2)
+			++s;
+		while (cline() < line(s))
+			--s;
+		mark("", line(line(s)));
 	}
 
 	void set_start(int _start)
 	{
-		//std::cout << "!!!" << _start << std::endl;
-		start_ = line(_start);
-		while (cline() >= sline() + LINES - 2)
-			--cursor_;
-		while (cline() < sline())
-			++cursor_;
+		if (_start >= lines())
+			_start = lines() - 1;
+		if (_start < 0)
+			_start = 0;
+
+		mark("", line(_start));
+		iterator c = cursor();
+		while (line(c) >= sline() + LINES - 2)
+			--c;
+		while (line(c) < sline())
+			++c;
+
+		mark("_", c);
 	}
 
 	void read(std::istream &stream)

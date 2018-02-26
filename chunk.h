@@ -1,37 +1,97 @@
 #ifndef IV_CHUNK_H
 #define IV_CHUNK_H
 
+#include <algorithm>
 #include <cassert>
-#include <ext/rope>
+#include <map>
+#include <vector>
 
-/* several whole contigous lines */
-struct chunk : public __gnu_cxx::rope<char>
+/* several whole contigous lines
+ * 
+ * we store the contents in a standard STL-like mutable container,
+ * also store some persistent iterators in a map keyed by a mark_type
+ *
+ * we assume that all parent_type iterators are invalidated at any
+ * non-const operation
+ */
+template <class Parent>
+struct mutable_container_chunk : public Parent
 {
-	int chars;
+	typedef Parent parent_type;
+	using typename parent_type::value_type;
+	using typename parent_type::const_iterator;
+	using typename parent_type::iterator;
+	typedef std::string mark_type;
+
+	std::map<mark_type, iterator> marks;
+
+protected:
+	struct preserve_mark_positions {
+		mutable_container_chunk *c;
+		std::map<mark_type, size_t> p;
+
+		preserve_mark_positions(mutable_container_chunk *_c) : c(_c) {
+			for (const auto e : c->marks)
+				p.insert(std::make_pair(
+					e.first,
+					std::distance(c->begin(), e.second)
+				));
+		}
+		~preserve_mark_positions() {
+			for (const auto e : p)
+				c->marks[e.first] = c->begin() + e.second;
+		}
+	};
+
+public:
+	using parent_type::size;
 	int lines;
 
-	chunk() : chars(0), lines(0) { }
-	explicit chunk(__gnu_cxx::rope<char> other)
-		: __gnu_cxx::rope<char>(other)
-		, chars(0), lines(0)
+	mutable_container_chunk() : lines(0) { }
+
+	template <class InputIterator>
+	mutable_container_chunk(InputIterator b, InputIterator e)
+		: parent_type(b, e)
+		, lines(std::count(this->cbegin(), this->cend(), value_type('\n')))
 	{
-		for (auto i = begin(); i != end(); ++i) {
-			{
-				auto j = i;
-				++j;
-				if (j == end())
-					assert(*i == '\n');
-			}
-			chars++;
-			lines += (*i == '\n');
-		}
+		if (!this->empty())
+			assert(this->back() == '\n');
 	}
-	void push_back(char c)
+
+	void push_back(value_type c)
 	{
-		__gnu_cxx::rope<char>::push_back(c);
-		chars++;
+		{
+			preserve_mark_positions _(this);
+			parent_type::push_back(c);
+		}
 		lines += (c == '\n');
 	}
+
+	const_iterator mark(mark_type m) const
+	{
+		auto i = marks.find(m);
+		if (i == marks.end())
+			return Parent::end();
+		return i->second;
+	}
+
+	iterator mark(mark_type m)
+	{
+		auto i = marks.find(m);
+		if (i == marks.end())
+			return Parent::end();
+		return i->second;
+	}
+
+	void mark(mark_type m, iterator it)
+	{
+		if (it == Parent::end())
+			marks.erase(m);
+		else
+			marks[m] = it;
+	}
 };
+
+typedef mutable_container_chunk<std::vector<char>> chunk;
 
 #endif // IV_CHUNK_H
