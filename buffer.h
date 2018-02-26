@@ -50,11 +50,15 @@ struct buffer : public std::list<chunk>
 			auto x = std::min(n, list_it->end() - chunk_it);
 			n -= x;
 			chunk_it += x;
-			while (n >= (difference_type)(++list_it)->size())
-				n -= list_it->size();
-			chunk_it = list_it->begin() + n;
-			if (chunk_it == list_it->end())
-				chunk_it = (++list_it)->begin();
+			// also skip empty chunks
+			C::const_iterator i = list_it;
+			while (i != b->c_end() && n >= (difference_type)i->size())
+				n -= i++->size();
+			if (i == b->c_end())
+				chunk_it = chunk::const_iterator();
+			else if (i != list_it)
+				chunk_it = list_it->begin() + n;
+			list_it = i;
 			return *this;
 		}
 
@@ -249,6 +253,7 @@ struct buffer : public std::list<chunk>
 		if (i == C::end())
 			return end();
 		chunk::const_iterator j = i->begin();
+		assert(n >= 0);
 		while (n)
 			n -= (*(j++) == '\n');
 		return const_iterator(this, i, j);

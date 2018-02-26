@@ -151,7 +151,9 @@ void handle_command(const std::string &command)
 	} else if (arg1 == "escape") {
 		if (mode == mode_type::INSERT) {
 			auto c = buf.line(buf.cline());
-			std::advance(c, std::min(std::max(buf.cline_size() - 2, 0), std::max(buf.cursor_x(), 1) - 1));
+			auto x = std::max(buf.cline_size() - 2, 0);
+			auto y = std::max(buf.cursor_x(), 1) - 1;
+			std::advance(c, std::min(x, y));
 			buf.mark("_", c);
 		}
 		mode = mode_type::NORMAL;
