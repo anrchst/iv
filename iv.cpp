@@ -92,9 +92,6 @@ void Window::update_file()
 	wclear(file);
 	int firstline = buf.sline();
 	wmove(file, 0, 0);
-	//int x = 0;
-	//for (std::list<chunk>::const_iterator i = buf.std::list<chunk>::begin(); i != buf.std::list<chunk>::end(); ++i)
-	//	std::cout << ">" << i->size() << std::endl;
 	if (buf.empty()) {
 		assert(chunk::const_iterator() == (chunk::const_iterator)chunk::iterator());
 		assert(buf.begin() == buf.end());
@@ -108,13 +105,6 @@ void Window::update_file()
 		waddch(file, *i);
 	}
 	int cline = buf.cline();
-	/*
-	wmove(file, 5, 0);
-	std::ostringstream o;
-	//o << cline << *buf.cursor() << std::endl;
-	o << buf.line(buf.start()) << std::endl;
-	waddstr(file, o.str().c_str());
-	*/
 	wmove(file, cline - firstline, std::distance(buf.line(buf.cline()), buf.cursor()));
 }
 
