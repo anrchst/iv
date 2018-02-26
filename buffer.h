@@ -185,7 +185,10 @@ struct buffer : public std::list<chunk>
 
 	int x(const_iterator i) const
 	{
-		return std::distance(i.list_it->begin(), i.chunk_it);
+		int ret = 0;
+		for (auto j = i.chunk_it; j != i.list_it->begin() && j[-1] != '\n'; --j)
+			ret++;
+		return ret;
 	}
 
 	int cursor_x() const
