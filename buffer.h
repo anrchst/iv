@@ -291,6 +291,18 @@ struct buffer : public std::list<chunk>
 		return i;
 	}
 
+	iterator erase(iterator i)
+	{
+		if (i == end())
+			throw std::runtime_error("can't erase at end()");
+		i.chunk_it = i.list_iter()->erase(i.chunk_iter());
+		while (i.list_it != C::end() && i.chunk_it == i.list_iter()->end())
+			i.chunk_it = (++i.list_it)->begin();
+		if (i.list_it == C::end())
+			i.chunk_it = chunk::iterator();
+		return i;
+	}
+
 	void adjust_start()
 	{
 		iterator s = start();

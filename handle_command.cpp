@@ -130,6 +130,9 @@ void handle_command(const std::string &command)
 		buf.mark("_", c);
 		mode = mode_type::INSERT;
 		win.update();
+	} else if (arg0 == "n_x") {
+		buf.mark("_", buf.erase(buf.cursor()));
+		win.update();
 	} else if (arg0 != "misc") {
 		throw std::invalid_argument("unknown command: " + arg0);
 	} else if (!(args >> arg1)) {

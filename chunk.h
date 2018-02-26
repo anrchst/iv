@@ -86,6 +86,18 @@ public:
 		return ret;
 	}
 
+	iterator erase(iterator it)
+	{
+		iterator ret;
+		char c = *it;
+		{
+			preserve_mark_positions _(this, it - this->begin(), -1);
+			ret = parent_type::erase(it);
+		}
+		lines -= (c == '\n');
+		return ret;
+	}
+
 	const_iterator mark(mark_type m) const
 	{
 		auto i = marks.find(m);
