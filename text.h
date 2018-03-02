@@ -1,16 +1,7 @@
 #ifndef IV_TEXT_H
 #define IV_TEXT_H
 
-#include <valarray>
 #include "list.h"
-
-struct subtree_size_tag
-{
-	typedef int value_type;
-	static value_type leaf_value() { return 0; }
-	template<class Node>
-	static value_type singleton_value(Node *) { return 1; }
-};
 
 template <class T>
 struct returns_tag
@@ -22,64 +13,18 @@ struct returns_tag
 };
 
 template <class T>
-struct returns_and_marks_tag
+struct text : public iv::list<T, returns_tag<T>>
 {
-	struct value_type {
-		int returns;
-		std::valarray<bool> marks;
-		value_type() : returns(0) { marks.resize(128); }
-		value_type &operator +=(const value_type &other) {
-			returns += other.returns;
-			marks |= other.marks;
-			return *this;
-		}
-		value_type operator +(const value_type &other) {
-			value_type ret(*this);
-			ret += other;
-			return ret;
-		}
-	};
-	static value_type leaf_value() { return value_type(); }
-	template<class Node>
-	static value_type singleton_value(Node *n) {
-		value_type ret;
-		ret.returns = (n->v == T('\n'));
-		return ret;
-	}
-};
-
-template <class T>
-struct text : public iv::list<T, returns_and_marks_tag<T>>
-{
-	typedef iv::list<T, returns_and_marks_tag<T>> parent_type;
+	typedef iv::list<T, returns_tag<T>> parent_type;
 	using typename parent_type::const_iterator;
 	using typename parent_type::iterator;
 	using parent_type::begin;
 	using parent_type::end;
 	using parent_type::root;
-	void check() const
-	{
-		check(root());
-	}
-
-	void check(const_iterator i) const
-	{
-		if (!i.get())
-			return;
-		assert(i.stat()['\n'] == i.left().stat()['\n'] + (*i == T('\n')) + i.right().stat()['\n']);
-		if (i.left().get()) {
-			assert(i.left().parent() == i);
-			check(i.left());
-		}
-		if (i.right().get()) {
-			assert(i.right().parent() == i);
-			check(i.right());
-		}
-	}
 
 	int lines() const
 	{
-		return root().stat().returns;
+		return root().stat();
 	}
 
 	int line(const_iterator i) const
@@ -92,7 +37,7 @@ struct text : public iv::list<T, returns_and_marks_tag<T>>
 					ret += (*j == T('\n'));
 					//std::cout << "1. ret += " << (*j == T('\n')) << std::endl;
 				}
-				ret += j.left().stat().returns;
+				ret += j.left().stat();
 				//std::cout << "2. ret += " << j.left().stat() << std::endl;
 			}
 			
@@ -106,12 +51,12 @@ struct text : public iv::list<T, returns_and_marks_tag<T>>
 			return end();
 		else if (index == 0)
 			return begin();
-		if (root().stat().returns <= index)
+		if (root().stat() <= index)
 			return line(lines() - 1);
 		const_iterator ret = root();
-		while (ret.left().stat().returns != index) {
-			if (ret.left().stat().returns < index) {
-				index -= ret.left().stat().returns + (*ret == T('\n'));
+		while (ret.left().stat() != index) {
+			if (ret.left().stat() < index) {
+				index -= ret.left().stat() + (*ret == T('\n'));
 				ret = ret.right();
 			} else
 				ret = ret.left();

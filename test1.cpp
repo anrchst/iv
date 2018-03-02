@@ -3,6 +3,9 @@
 #include <string>
 #include "text.h"
 
+/***********************
+ * B R O K E N         *
+ * *********************/
 int main()
 {
 	std::string s = "abcdefgh\nABCDEFGH\n\nabcdefgh\nABCDEFGH\nabcdefgh\nABCDEFGH\nabcdefgh\nABCDEFGH\nabcdefgh\nABCDEFGH\n";

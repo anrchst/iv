@@ -52,6 +52,15 @@ struct tree : public tree_base<T,StatTag>
 	T v; // contained value
 	int h; // height
 	typename StatTag::value_type s; // stat
+	int size_;
+
+	int size() const
+	{
+		if (this == nullptr)
+			return 0;
+		else
+			return size_;
+	}
 
 	int height() const
 	{
@@ -74,7 +83,8 @@ struct tree : public tree_base<T,StatTag>
 		v(_v),
 		h(std::max(this->l->height(), this->r->height()) + 1),
 		s(this->l->stat() + StatTag::singleton_value(this)
-		  + this->r->stat())
+		  + this->r->stat()),
+		size_(this->l->size() + 1 + this->r->size())
 	{
 		if (this->l)
 			this->l->p = this;
@@ -228,33 +238,38 @@ tree<T,StatTag> *tree<T,StatTag>::join(tree<T,StatTag> *l, const T &v, tree<T,St
 } // namespace iv::internal
 
 template <class T, class StatTag>
+class list;
+
+template <class T, class StatTag>
 class list_const_iterator
 {
+	const list<T,StatTag> *lst;
 	const internal::tree_base<T,StatTag> *ptr;
 public:
-	using iterator_category = std::bidirectional_iterator_tag;
+	using iterator_category = std::random_access_iterator_tag;
 	using value_type = const T;
 	using difference_type = int;
 	using pointer = const T *;
 	using reference = const T &;
 
-	list_const_iterator(const internal::tree_base<T,StatTag> *node = nullptr)
-		: ptr(node)
+	explicit list_const_iterator(const list<T,StatTag> *_lst = NULL,
+	                             const internal::tree_base<T,StatTag> *node = nullptr)
+		: lst(_lst), ptr(node)
 	{
 	}
 
 	const internal::tree_base<T,StatTag> *get() const { return ptr; };
 	list_const_iterator left()
 	{
-		return list_const_iterator(this->get()->l);
+		return list_const_iterator(lst, this->get()->l);
 	}
 	list_const_iterator right()
 	{
-		return list_const_iterator(this->get()->r);
+		return list_const_iterator(lst, this->get()->r);
 	}
 	list_const_iterator parent()
 	{
-		return list_const_iterator(this->get()->p);
+		return list_const_iterator(lst, this->get()->p);
 	}
 	bool is_root() const
 	{
@@ -313,6 +328,23 @@ public:
 		return ret;
 	}
 
+	list_const_iterator operator +(int n)
+	{
+		list_const_iterator ret = *this;
+		ret += n;
+		return ret;
+	}
+	list_const_iterator &operator +=(int n)
+	{
+		for (int i = 0; i < n; i++)
+			++*this;
+		return *this;
+	}
+	int operator -(list_const_iterator other)
+	{
+		return lst->index(*this) - lst->index(other);
+	}
+
 	reference operator *()
 	{
 		return static_cast<const internal::tree<T,StatTag> *>(this->ptr)->v;
@@ -322,9 +354,6 @@ public:
 		return &**this;
 	}
 };
-
-template <class T, class StatTag>
-class list;
 
 template <class T, class StatTag>
 class list_iterator : public list_const_iterator<T,StatTag>
@@ -368,8 +397,15 @@ public:
 		list_const_iterator<T,StatTag>::operator --();
 		return ret;
 	}
-	operator list_const_iterator<T,StatTag>() const
+	list_iterator operator +(int n)
 	{
+		list_iterator ret = *this;
+		ret += n;
+		return ret;
+	}
+	list_iterator &operator +=(int n)
+	{
+		list_const_iterator<T,StatTag>::operator +=(n);
 		return *this;
 	}
 };
@@ -393,7 +429,7 @@ public:
 
 	const_iterator begin() const
 	{
-		const_iterator ret(head);
+		const_iterator ret(this, head);
 		while (ret.left().get())
 			ret = ret.left();
 		return ret;
@@ -401,7 +437,7 @@ public:
 
 	const_iterator end() const
 	{
-		return const_iterator(head);
+		return const_iterator(this, head);
 	}
 
 	iterator begin()
@@ -416,7 +452,7 @@ public:
 
 	const_iterator root() const
 	{
-		return const_iterator(head->root());
+		return const_iterator(this, head->root());
 	}
 
 	void push_front(const T &v)
@@ -440,7 +476,23 @@ public:
 			head->l = head->root()->insert(static_cast<internal::tree<T, StatTag> *>(before.get()), v, inserted);
 		}
 		head->l->p = head;
-		return iterator(inserted);
+		return iterator(const_iterator(this, inserted));
+	}
+
+	int index(const_iterator i) const
+	{
+		int ret = 0;
+		bool count = true;
+		if (i == end())
+			return i.left().stat();
+		for (; i != end(); i = i.parent()) {
+			if (count)
+				ret += i.left().stat();
+			count = (i == i.parent().right());
+			if (count)
+				ret += 1;
+		}
+		return ret;
 	}
 
 protected:
