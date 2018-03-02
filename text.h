@@ -1,6 +1,8 @@
 #ifndef IV_TEXT_H
 #define IV_TEXT_H
 
+#include <map>
+#include <string>
 #include "list.h"
 
 template <class T>
@@ -21,6 +23,29 @@ struct text : public iv::list<T, returns_tag<T>>
 	using parent_type::begin;
 	using parent_type::end;
 	using parent_type::root;
+	std::map<std::string, int> marks;
+
+	text() { marks[""] = 0; }
+
+	void insert(char c)
+	{
+		int cursor = marks["_"];
+		parent_type::insert(begin() + cursor, c);
+		for (auto m : marks) {
+			if (m.second >= cursor)
+				m.second++;
+		}
+	}
+
+	void erase()
+	{
+		/*int cursor = marks["_"];
+		parent_type::erase(begin() + cursor);
+		for (auto m : marks) {
+			if (m.second > cursor)
+				m.second--;
+		}*/
+	}
 
 	int lines() const
 	{

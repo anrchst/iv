@@ -275,6 +275,10 @@ public:
 	{
 		return parent() == *this;
 	}
+	int size() const
+	{
+		return static_cast<const internal::tree<T,StatTag> *>(this->get())->size();
+	}
 	typename StatTag::value_type stat() const
 	{
 		return static_cast<const internal::tree<T,StatTag> *>(this->get())->stat();
@@ -484,15 +488,20 @@ public:
 		int ret = 0;
 		bool count = true;
 		if (i == end())
-			return i.left().stat();
+			return i.left().size();
 		for (; i != end(); i = i.parent()) {
 			if (count)
-				ret += i.left().stat();
+				ret += i.left().size();
 			count = (i == i.parent().right());
 			if (count)
 				ret += 1;
 		}
 		return ret;
+	}
+
+	int size() const
+	{
+		return head->l->size();
 	}
 
 protected:

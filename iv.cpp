@@ -26,10 +26,9 @@ const int tab_size = 8;
 struct buffer : public text<char>
 {
 	typedef text<char> parent_type;
-	iterator start_, cursor_;
 	std::string filename;
 
-	buffer() : start_(end()), cursor_(end()) {}
+	buffer() { marks[""] = 0; }
 	buffer(const std::string _filename) : filename(_filename)
 	{
 		r();
@@ -37,22 +36,22 @@ struct buffer : public text<char>
 
 	const_iterator start() const
 	{
-		return start_;
+		return begin() + marks.find("")->second;
 	}
 
 	iterator start()
 	{
-		return start_;
+		return begin() + marks.find("")->second;
 	}
 
 	const_iterator cursor() const
 	{
-		return cursor_;
+		return begin() + marks.find("_")->second;
 	}
 
 	iterator cursor()
 	{
-		return cursor_;
+		return begin() + marks.find("_")->second;
 	}
 
 	int cursor_x() const
@@ -75,7 +74,7 @@ struct buffer : public text<char>
 				break;
 			}
 		}
-		start_ = cursor_ = this->begin();
+		marks[""] = marks["_"] = 0;
 	}
 
 	int cline() const
@@ -96,20 +95,20 @@ struct buffer : public text<char>
 	void adjust_start()
 	{
 		while (cline() >= sline() + LINES - 2)
-			++start_;
+			++marks[""];
 		while (cline() < sline())
-			--start_;
-		start_ = line(sline());
+			--marks[""];
+		marks[""] = line(sline()) - begin();
 	}
 
 	void set_start(int _start)
 	{
 		//std::cout << "!!!" << _start << std::endl;
-		start_ = line(_start);
+		marks[""] = line(_start) - begin();
 		while (cline() >= sline() + LINES - 2)
-			--cursor_;
+			--marks["_"];
 		while (cline() < sline())
-			++cursor_;
+			++marks["_"];
 	}
 
 	void read(std::istream &stream)
@@ -321,8 +320,8 @@ void handle_key()
 		if (mode == mode_type::COMMAND && command_bindings.handle(c))
 			break;
 		if (mode == mode_type::INSERT && std::isprint(c)) {
-			buf.insert(buf.cursor_, c);
-			buf.cursor_++;
+			buf.insert(c);
+			buf.marks["_"]++;
 			win.update_file();
 			break;
 		}
