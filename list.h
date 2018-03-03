@@ -208,8 +208,9 @@ tree<T,StatTag> *tree<T,StatTag>::insert(tree<T,StatTag> *before, const T &x, tr
 template <class T, class StatTag>
 tree<T,StatTag> *tree<T,StatTag>::replace(tree<T,StatTag> *srcparent, tree<T,StatTag> *&src, tree<T,StatTag> *dst)
 {
+	std::cout << "* replace: " << this << "(" << this->l << ":" << this->r << ") " << srcparent << " " << &src << " " << dst << std::endl;
 	if (this == src)
-		return dst;
+		return (src = dst);
 	if (&src == &srcparent->l)
 		return replace(static_cast<tree<T,StatTag> *>(srcparent->p), srcparent->pointer(), join(dst, srcparent->v, srcparent->r));
 	else if (&src == &srcparent->r)
@@ -221,13 +222,14 @@ tree<T,StatTag> *tree<T,StatTag>::replace(tree<T,StatTag> *srcparent, tree<T,Sta
 template <class T, class StatTag>
 tree<T,StatTag> *tree<T,StatTag>::join(tree<T,StatTag> *l, const T &v, tree<T,StatTag> *r)
 {
+	std::cout << "* join: " << l << " " << v << " " << r << std::endl;
 	if (l == nullptr)
 		return r->add_min(v);
 	else if (r == nullptr)
 		return l->add_max(v);
-	else if (l->h > r->h + 2)
+	else if (l->h >= r->h + 1)
 		return balance(l->l, l->v, join(l->r, v, r));
-	else if (r->h > l->h + 2)
+	else if (r->h >= l->h + 1)
 		return balance(join(r->l, v, l), r->v, r->r);
 	else
 		return new tree<T,StatTag>(l, v, r);
@@ -272,6 +274,10 @@ public:
 	bool is_root() const
 	{
 		return parent() == *this;
+	}
+	int height() const
+	{
+		return static_cast<const internal::tree<T,StatTag> *>(this->get())->height();
 	}
 	int size() const
 	{
