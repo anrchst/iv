@@ -31,7 +31,7 @@ struct text : public iv::list<T, returns_tag<T>>
 	{
 		int cursor = marks["_"];
 		parent_type::insert(begin() + cursor, c);
-		for (auto m : marks) {
+		for (auto &m : marks) {
 			if (m.second >= cursor)
 				m.second++;
 		}

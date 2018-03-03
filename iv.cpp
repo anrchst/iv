@@ -321,7 +321,6 @@ void handle_key()
 			break;
 		if (mode == mode_type::INSERT && std::isprint(c)) {
 			buf.insert(c);
-			buf.marks["_"]++;
 			win.update_file();
 			break;
 		}
