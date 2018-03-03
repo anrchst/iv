@@ -97,7 +97,7 @@ struct tree : public tree_base<T,StatTag>
 	tree *add_min(const T &x) { tree *inserted; return this->add_min(x, inserted); }
 	tree *add_max(const T &x) { tree *inserted; return this->add_max(x, inserted); }
 	tree *insert(tree *before, const T &x, tree *&inserted);
-	tree *replace(tree *&src, tree *dst);
+	tree *replace(tree *srcparent, tree *&src, tree *dst);
 	tree *&pointer() {
 		if (this == this->p->l)
 			return this->p->l;
@@ -203,19 +203,18 @@ tree<T,StatTag> *tree<T,StatTag>::add_max(const T &x, tree<T,StatTag> *&inserted
 template <class T, class StatTag>
 tree<T,StatTag> *tree<T,StatTag>::insert(tree<T,StatTag> *before, const T &x, tree<T,StatTag> *&inserted)
 {
-	return replace(before->l, before->l->add_max(x, inserted));
+	return replace(before, before->l, before->l->add_max(x, inserted));
 }
 
 template <class T, class StatTag>
-tree<T,StatTag> *tree<T,StatTag>::replace(tree<T,StatTag> *&src, tree<T,StatTag> *dst)
+tree<T,StatTag> *tree<T,StatTag>::replace(tree<T,StatTag> *srcparent, tree<T,StatTag> *&src, tree<T,StatTag> *dst)
 {
 	if (this == src)
 		return dst;
-	tree<T,StatTag> *srcparent = static_cast<tree<T,StatTag> *>(src->p);
-	if (&src == &src->p->l)
-		return replace(srcparent->pointer(), join(dst, srcparent->v, srcparent->r));
-	else if (&src == &src->p->r)
-		return replace(srcparent->pointer(), join(srcparent->l, srcparent->v, dst));
+	if (&src == &srcparent->l)
+		return replace(static_cast<tree<T,StatTag> *>(srcparent->p), srcparent->pointer(), join(dst, srcparent->v, srcparent->r));
+	else if (&src == &srcparent->r)
+		return replace(static_cast<tree<T,StatTag> *>(srcparent->p), srcparent->pointer(), join(srcparent->l, srcparent->v, dst));
 	else
 		throw std::runtime_error("src has no parent");
 }
