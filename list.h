@@ -8,7 +8,6 @@
 #include <iterator>
 #include <memory>
 #include <vector>
-#include "simple_ptr.h"
 
 namespace iv
 {
