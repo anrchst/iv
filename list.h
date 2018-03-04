@@ -111,6 +111,11 @@ struct tree : public tree_base<T,StatTag>
 		else
 			throw std::runtime_error("no such child");
 	}
+	std::string str() const {
+		if (this == nullptr)
+			return "";
+		return this->l->str() + std::string{this->v} + this->r->str();
+	}
 protected:
 	static tree *join(tree *l, const T &v, tree *r);
 	static tree *balance(tree *l, const T &v, tree *r);
@@ -214,14 +219,16 @@ tree<T,StatTag> *tree<T,StatTag>::insert(tree<T,StatTag> *before, const T &x, tr
 template <class T, class StatTag>
 tree<T,StatTag> *tree<T,StatTag>::replace(tree<T,StatTag> *srcparent, tree<T,StatTag> * const &src, tree<T,StatTag> *dst)
 {
-	//std::cout << "* replace: " << this << "@" << v << "(" << this->l << ":" << this->r << ") " << srcparent << " " << src << " " << dst << std::endl;
+	std::cout << "* replace: " << this << "@" << this->str() << "(" << this->l->str() << ":" << this->r->str() << ") " << srcparent->str() << " " << src->str() << " " << dst->str() << std::endl;
 	if (this == src) {
 		//dst->p = srcparent;
 		return dst;
 	}
-	if (&src != &srcparent->l)
+	// no head here plz
+	assert(srcparent->l != src || srcparent->r != src);
+	if (&src == &srcparent->r)
 		return replace(static_cast<tree<T,StatTag> *>(srcparent->p), srcparent->pointer(), join(srcparent->l, srcparent->v, dst));
-	else if (&src != &srcparent->r)
+	else if (&src == &srcparent->l)
 		return replace(static_cast<tree<T,StatTag> *>(srcparent->p), srcparent->pointer(), join(dst, srcparent->v, srcparent->r));
 	else
 		throw std::runtime_error("src has no parent");
@@ -230,7 +237,7 @@ tree<T,StatTag> *tree<T,StatTag>::replace(tree<T,StatTag> *srcparent, tree<T,Sta
 template <class T, class StatTag>
 tree<T,StatTag> *tree<T,StatTag>::join(tree<T,StatTag> *l, const T &v, tree<T,StatTag> *r)
 {
-	//std::cout << "* join: " << l << " " << v << " " << r << std::endl;
+	std::cout << "* join: " << l->str() << " " << v << " " << r->str() << std::endl;
 	if (l == nullptr)
 		return r->add_min(v);
 	else if (r == nullptr)
@@ -498,7 +505,7 @@ public:
 	iterator insert(iterator before, const T &v)
 	{
 		internal::tree<T, StatTag> *inserted;
-		if (0 && before.get() == head)
+		if (before.get() == head)
 			head->l = head->r = head->root()->add_max(v, inserted);
 		else {
 			head->l = head->r = head->root()->insert(static_cast<internal::tree<T, StatTag> *>(before.get()), v, inserted);
