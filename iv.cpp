@@ -28,7 +28,7 @@ struct buffer : public text<char>
 	typedef text<char> parent_type;
 	std::string filename;
 
-	buffer() { marks[""] = 0; }
+	buffer() { marks[""] = marks["_"] = 0; }
 	buffer(const std::string _filename) : filename(_filename)
 	{
 		r();
@@ -221,7 +221,6 @@ void Window::update()
 	for (WINDOW *w: {file, status, cmdline})
 		wnoutrefresh(w);
 	activate_window();
-	doupdate();
 }
 
 void Window::update_file()
@@ -229,7 +228,7 @@ void Window::update_file()
 	wclear(file);
 	int firstline = buf.sline();
 	wmove(file, 0, 0);
-	for (buffer::const_iterator i = buf.start(); i != buf.end(); ++i) {
+	for (buffer::const_iterator i = buf.line(buf.sline()); i != buf.end(); ++i) {
 		waddch(file, *i);
 	}
 	int cline = buf.cline();

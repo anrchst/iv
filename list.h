@@ -209,18 +209,13 @@ template <class T, class StatTag>
 tree<T,StatTag> *tree<T,StatTag>::replace(tree<T,StatTag> *srcparent, tree<T,StatTag> *&src, tree<T,StatTag> *dst)
 {
 	//std::cout << "* replace: " << this << "@" << v << "(" << this->l << ":" << this->r << ") " << srcparent << " " << src << " " << dst << std::endl;
-	if (this == src) {
-		return dst;
-	} else if (this == srcparent) {
-		if (&src != &srcparent->l)
-			return join(srcparent->l, srcparent->v, dst);
-		else if (&src != &srcparent->r)
-			return join(dst, srcparent->v, srcparent->r);
-	}
+	dst->p = srcparent;
+	if (this == src)
+		return src = dst;
 	if (&src != &srcparent->l)
-		return replace(static_cast<tree<T,StatTag> *>(srcparent->p), srcparent->pointer(), join(srcparent->l, srcparent->v, dst));
+		return src = replace(static_cast<tree<T,StatTag> *>(srcparent->p), srcparent->pointer(), join(srcparent->l, srcparent->v, dst));
 	else if (&src != &srcparent->r)
-		return replace(static_cast<tree<T,StatTag> *>(srcparent->p), srcparent->pointer(), join(dst, srcparent->v, srcparent->r));
+		return src = replace(static_cast<tree<T,StatTag> *>(srcparent->p), srcparent->pointer(), join(dst, srcparent->v, srcparent->r));
 	else
 		throw std::runtime_error("src has no parent");
 }
@@ -233,9 +228,9 @@ tree<T,StatTag> *tree<T,StatTag>::join(tree<T,StatTag> *l, const T &v, tree<T,St
 		return r->add_min(v);
 	else if (r == nullptr)
 		return l->add_max(v);
-	else if (l->h > r->h + 1)
+	else if (l->h > r->h + 2)
 		return balance(l->l, l->v, join(l->r, v, r));
-	else if (r->h > l->h + 1)
+	else if (r->h > l->h + 2)
 		return balance(join(l, v, r->l), r->v, r->r);
 	else
 		return new tree<T,StatTag>(l, v, r);

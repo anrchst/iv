@@ -4,14 +4,16 @@
 #include <string>
 #include "text.h"
 
-int main()
+int main(int argc, char **argv)
 {
 	text<char> t;
 	t.push_back('a');
 	t.push_back('b');
 	t.push_back('c');
+	t.push_back('d');
+	t.push_back('e');
 	t.marks["_"] = 3;
-	for (int i = 0; i < 10000; i++) {
+	for (int i = 0; i < std::atoi(argv[1]); i++) {
 		t.insert('d' + i % 5);
 		//std::cout << "===" << std::endl;
 		//std::cout << t.marks["_"] << std::endl;
@@ -25,9 +27,11 @@ int main()
 	assert(*j++ == 'a');
 	assert(*j++ == 'b');
 	assert(*j++ == 'c');
-	for (int i = 0; i < 10000; i++, j++) {
+	for (int i = 0; i < std::atoi(argv[1]); i++, j++) {
 		//std::cout << "!" << (*j) << std::endl;
 		assert(*j == ('d' + i % 5));
 	}
+	assert(*j++ == 'd');
+	assert(*j++ == 'e');
 	assert(j == t.end());
 }
