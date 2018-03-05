@@ -1,6 +1,7 @@
 #ifndef IV_TEXT_H
 #define IV_TEXT_H
 
+#include <deque>
 #include <map>
 #include <string>
 #include "list.h"
@@ -97,18 +98,8 @@ struct text : public iv::list<T, returns_tag<T>>
 	template <class Iterator>
 	void assign(Iterator begin, Iterator end)
 	{
-		this->clear();
-		for (; begin != end; ++begin) {
-			switch (*begin) {
-			case '\t':
-				for (int i = 0; i < 8; i++)
-					this->push_back(' ');
-				break;
-			default:
-				this->push_back(*begin);
-				break;
-			}
-		}
+		std::deque<char> d(begin, end);
+		*this = iv::list<T, returns_tag<T>>(d.begin(), d.end());
 	}
 
 	std::string str() const

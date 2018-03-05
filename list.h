@@ -97,6 +97,18 @@ struct tree : public tree_base<T,StatTag>
 		}
 	}
 
+	template <class RandIt>
+	static tree *construct(RandIt b, RandIt e)
+	{
+		if (b == e)
+			return nullptr;
+		int n = e - b;
+		int c = n - 1;
+		int l = c / 2;
+		int r = c - l;
+		return new tree(construct(b, b + l), b[l], construct(b + l + 1, e));
+	}
+
 	tree *add_min(const T &x, tree *&inserted);
 	tree *add_max(const T &x, tree *&inserted);
 	tree *add_min(const T &x) { tree *inserted; return this->add_min(x, inserted); }
@@ -502,6 +514,13 @@ public:
 
 	list() : head(new internal::tree_head<T,StatTag>())
 	{
+	}
+
+	template <class RandIt>
+	list(RandIt b, RandIt e) : head(new internal::tree_head<T,StatTag>())
+	{
+		head->l = head->r = internal::tree<T,StatTag>::construct(b, e);
+		head->l->p = head;
 	}
 
 	void clear()
