@@ -99,7 +99,7 @@ struct text : public iv::list<T, returns_tag<T>>
 	void assign(Iterator begin, Iterator end)
 	{
 		std::deque<char> d(begin, end);
-		*this = iv::list<T, returns_tag<T>>(d.begin(), d.end());
+		iv::list<T, returns_tag<T>>::operator =(iv::list<T, returns_tag<T>>(d.begin(), d.end()));
 	}
 
 	std::string str() const

@@ -105,7 +105,6 @@ struct tree : public tree_base<T,StatTag>
 		int n = e - b;
 		int c = n - 1;
 		int l = c / 2;
-		int r = c - l;
 		return new tree(construct(b, b + l), b[l], construct(b + l + 1, e));
 	}
 

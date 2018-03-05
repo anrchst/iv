@@ -62,18 +62,7 @@ struct buffer : public text<char>
 	template <class Iterator>
 	void assign(Iterator begin, Iterator end)
 	{
-		clear();
-		for (; begin != end; ++begin) {
-			switch (*begin) {
-			case '\t':
-				for (int i = 0; i < tab_size; i++)
-					push_back(' ');
-				break;
-			default:
-				push_back(*begin);
-				break;
-			}
-		}
+		text<char>::assign(begin, end);
 		marks[""] = marks["_"] = 0;
 	}
 
