@@ -53,7 +53,6 @@ void handle_command(const std::string &command)
 		} else if (direction == "down") {
 			auto cl = buf.cline();
 			auto cx = std::distance(buf.line(cl), buf.begin() + buf.marks["_"]);
-			std::cout << cl << " " << cx << std::endl;
 			if (cl < buf.lines() - 1)
 				for (buf.marks["_"] = buf.line(cl + 1) - buf.begin(); *buf.cursor() != '\n' && buf.cursor_x() < cx; buf.marks["_"]++)
 					;
