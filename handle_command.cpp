@@ -64,7 +64,7 @@ void handle_command(const std::string &command)
 		}
 		win.update_file();
 	} else if (std::isdigit(arg0[0])) {
-		buf.marks["_"] = buf.line(std::atoi(arg0.c_str())) - buf.begin();
+		buf.marks["_"] = buf.line(std::atoi(arg0.c_str()) - 1) - buf.begin();
 		buf.adjust_start();
 		win.update_file();
 	} else if (arg0 == "refresh") {

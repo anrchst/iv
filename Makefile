@@ -17,4 +17,7 @@ test1: test1.cpp list.h text.h Makefile
 clean:
 	rm iv iv.opt test1
 
-.PHONY: test clean
+install: iv.opt
+	cp iv.opt /usr/local/bin/iv
+
+.PHONY: test clean install
