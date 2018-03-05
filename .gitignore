@@ -1,5 +1,7 @@
 iv
+iv.opt
 test1
+*.swp
 
 # Prerequisites
 *.d

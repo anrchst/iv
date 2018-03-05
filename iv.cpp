@@ -24,6 +24,138 @@
 
 const int tab_size = 8;
 
+struct buffer : public text<char>
+{
+	typedef text<char> parent_type;
+	std::string filename;
+
+	buffer() { marks[""] = marks["_"] = 0; }
+	buffer(const std::string _filename) : filename(_filename)
+	{
+		r();
+	}
+
+	const_iterator start() const
+	{
+		return begin() + marks.find("")->second;
+	}
+
+	iterator start()
+	{
+		return begin() + marks.find("")->second;
+	}
+
+	const_iterator cursor() const
+	{
+		return begin() + marks.find("_")->second;
+	}
+
+	iterator cursor()
+	{
+		return begin() + marks.find("_")->second;
+	}
+
+	int cursor_x() const
+	{
+		return std::distance(line(cline()), cursor());
+	}
+
+	template <class Iterator>
+	void assign(Iterator begin, Iterator end)
+	{
+		text<char>::assign(begin, end);
+		marks[""] = marks["_"] = 0;
+	}
+
+	int cline() const
+	{
+		return line(cursor());
+	}
+
+	int sline() const
+	{
+		return line(start());
+	}
+
+	int cline_size() const
+	{
+		return std::distance(line(cline()), line(cline() + 1));
+	}
+
+	int file_lines() const
+	{
+		return LINES - 2;
+	}
+
+	void adjust_start()
+	{
+		if (sline() < cline() - file_lines() + 1)
+			marks[""] = line(cline() - file_lines() + 1) - begin();
+		if (cline() < sline())
+			marks[""] = line(cline()) - begin();
+		marks[""] = line(sline()) - begin();
+	}
+
+	void set_start(int _start)
+	{
+		//std::cout << "!!!" << _start << std::endl;
+		marks[""] = line(_start) - begin();
+		if (cline() >= sline() + file_lines())
+			marks["_"] = line(sline() + file_lines() - 1) - begin();
+		if (cline() < sline())
+			marks["_"] = start() - begin();
+	}
+
+	void read(std::istream &stream)
+	{
+		assign(std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>());
+	}
+
+	void write(std::ostream &stream)
+	{
+		for (auto c : *this)
+			stream << c;
+	}
+
+	void r(std::string _filename = std::string())
+	{
+		if (_filename.empty())
+			_filename = filename;
+		std::ifstream stream(_filename);
+		stream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+		read(stream);
+	}
+
+	void o(const std::string &_filename = std::string())
+	{
+		if (_filename.empty())
+			throw std::invalid_argument(":o needs an argument");
+		std::ifstream stream(_filename);
+		stream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+		read(stream);
+		filename = _filename;
+	}
+
+	void w(std::string _filename = std::string())
+	{
+		if (_filename.empty())
+			_filename = filename;
+		std::ofstream stream(_filename);
+		stream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+		write(stream);
+	}
+
+	void saveas(const std::string &_filename = std::string())
+	{
+		if (_filename.empty())
+			throw std::invalid_argument(":saveas needs an argument");
+		std::ofstream stream(_filename);
+		stream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+		write(stream);
+		filename = _filename;
+	}
+} buf;
+
 enum class mode_type {
 	NORMAL,
 	INSERT,
@@ -84,7 +216,6 @@ void Window::update()
 	for (WINDOW *w: {file, status, cmdline})
 		wnoutrefresh(w);
 	activate_window();
-	doupdate();
 }
 
 void Window::update_file()
@@ -92,20 +223,20 @@ void Window::update_file()
 	wclear(file);
 	int firstline = buf.sline();
 	wmove(file, 0, 0);
-	if (buf.empty()) {
-		assert(chunk::const_iterator() == (chunk::const_iterator)chunk::iterator());
-		assert(buf.begin() == buf.end());
-		assert(buf.start().list_iter() == buf.std::list<chunk>::end());
-		assert(buf.start().chunk_iter() == chunk::iterator());
-		assert(buf.start() == buf.end());
-	}
-	for (buffer::const_iterator i = buf.start(); i != buf.end(); ++i) {
-		assert(i.list_iter() != buf.std::list<chunk>::end());
-		assert(i.list_iter()->end() != i.chunk_iter());
+	for (buffer::const_iterator i = buf.line(buf.sline()); i != buf.end(); ++i) {
 		waddch(file, *i);
+		if (getcury(file) >= buf.file_lines() - 1 && getcurx(file) >= COLS - 1)
+			break;
 	}
 	int cline = buf.cline();
-	wmove(file, cline - firstline, std::distance(buf.line(buf.cline()), buf.cursor()));
+	/*
+	wmove(file, 5, 0);
+	std::ostringstream o;
+	//o << cline << *buf.cursor() << std::endl;
+	o << buf.line(buf.start()) << std::endl;
+	waddstr(file, o.str().c_str());
+	*/
+	wmove(file, cline - firstline, std::distance(buf.line(cline), buf.cursor()));
 }
 
 void Window::update_status()
@@ -185,7 +316,7 @@ void handle_key()
 		if (mode == mode_type::COMMAND && command_bindings.handle(c))
 			break;
 		if (mode == mode_type::INSERT && std::isprint(c)) {
-			buf.insert(buf.cursor(), c);
+			buf.insert(c);
 			win.update_file();
 			break;
 		}
