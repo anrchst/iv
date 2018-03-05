@@ -220,22 +220,20 @@ void Window::update()
 void Window::update_file()
 {
 	wclear(file);
-	int firstline = buf.sline();
 	wmove(file, 0, 0);
-	for (buffer::const_iterator i = buf.line(buf.sline()); i != buf.end(); ++i) {
+	for (buffer::const_iterator i = buf.line(buf.sline()); i != buf.begin() + buf.marks["_"]; ++i) {
 		waddch(file, *i);
 		if (getcury(file) >= buf.file_lines() - 1 && getcurx(file) >= COLS - 1)
 			break;
 	}
-	int cline = buf.cline();
-	/*
-	wmove(file, 5, 0);
-	std::ostringstream o;
-	//o << cline << *buf.cursor() << std::endl;
-	o << buf.line(buf.start()) << std::endl;
-	waddstr(file, o.str().c_str());
-	*/
-	wmove(file, cline - firstline, std::distance(buf.line(cline), buf.cursor()));
+	int cy = getcury(file);
+	int cx = getcurx(file);
+	for (buffer::const_iterator i = buf.begin() + buf.marks["_"]; i != buf.end(); ++i) {
+		waddch(file, *i);
+		if (getcury(file) >= buf.file_lines() - 1 && getcurx(file) >= COLS - 1)
+			break;
+	}
+	wmove(file, cy, cx);
 }
 
 void Window::update_status()

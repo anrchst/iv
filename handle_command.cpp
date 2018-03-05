@@ -131,11 +131,10 @@ void handle_command(const std::string &command)
 	} else if (!(args >> arg1)) {
 		throw std::invalid_argument("need argument: " + arg0);
 	} else if (arg1 == "i:backspace") {
-		if (buf.cursor_x() > 0) {
-			buf.erase();
+		if (buf.marks["_"] > 0)
 			buf.marks["_"]--;
-			win.update_file();
-		}
+		buf.erase();
+		win.update_file();
 	} else if (arg1 == "c:backspace") {
 		if (win.command.empty())
 			mode = mode_type::NORMAL;
