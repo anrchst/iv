@@ -92,12 +92,17 @@ struct buffer : public text<char>
 		return std::distance(line(cline()), line(cline() + 1));
 	}
 
+	int file_lines() const
+	{
+		return LINES - 2;
+	}
+
 	void adjust_start()
 	{
-		while (cline() >= sline() + LINES - 2)
-			++marks[""];
-		while (cline() < sline())
-			--marks[""];
+		if (sline() < cline() - file_lines() + 1)
+			marks[""] = line(cline() - file_lines() + 1) - begin();
+		if (cline() < sline())
+			marks[""] = line(cline()) - begin();
 		marks[""] = line(sline()) - begin();
 	}
 
@@ -105,10 +110,10 @@ struct buffer : public text<char>
 	{
 		//std::cout << "!!!" << _start << std::endl;
 		marks[""] = line(_start) - begin();
-		while (cline() >= sline() + LINES - 2)
-			--marks["_"];
-		while (cline() < sline())
-			++marks["_"];
+		if (cline() >= sline() + file_lines())
+			marks["_"] = line(sline() + file_lines() - 1) - begin();
+		if (cline() < sline())
+			marks["_"] = start() - begin();
 	}
 
 	void read(std::istream &stream)
@@ -230,6 +235,8 @@ void Window::update_file()
 	wmove(file, 0, 0);
 	for (buffer::const_iterator i = buf.line(buf.sline()); i != buf.end(); ++i) {
 		waddch(file, *i);
+		if (getcury(file) >= buf.file_lines() - 1 && getcurx(file) >= COLS - 1)
+			break;
 	}
 	int cline = buf.cline();
 	/*
@@ -239,7 +246,7 @@ void Window::update_file()
 	o << buf.line(buf.start()) << std::endl;
 	waddstr(file, o.str().c_str());
 	*/
-	wmove(file, cline - firstline, std::distance(buf.line(buf.cline()), buf.cursor()));
+	wmove(file, cline - firstline, std::distance(buf.line(cline), buf.cursor()));
 }
 
 void Window::update_status()
