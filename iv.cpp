@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <cassert>
 #include <cctype> /* isprint */
 #include <cstdlib> /* exit() */
 #include <fstream>
@@ -16,7 +15,7 @@
 #include <ncurses.h>
 #include <signal.h>
 #include <stdio.h>
-#include "buffer.h"
+#include "text.h"
 
 #ifndef CTRL
 #define CTRL(c) ((c) & 037)

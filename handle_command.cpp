@@ -49,7 +49,6 @@ void handle_command(const std::string &command)
 			auto cx = std::distance(buf.line(cl), buf.begin() + buf.marks["_"]);
 			for (buf.marks["_"] = buf.line(cl - 1) - buf.begin(); *buf.cursor() != '\n' && buf.cursor_x() < cx; buf.marks["_"]++)
 				;
-			buf.mark("_", c);
 			buf.adjust_start();
 		} else if (direction == "down") {
 			auto cl = buf.cline();
@@ -57,8 +56,6 @@ void handle_command(const std::string &command)
 			if (cl < buf.lines() - 1)
 				for (buf.marks["_"] = buf.line(cl + 1) - buf.begin(); *buf.cursor() != '\n' && buf.cursor_x() < cx; buf.marks["_"]++)
 					;
-				buf.mark("_", c);
-			}
 			buf.adjust_start();
 		}
 		win.update_file();
