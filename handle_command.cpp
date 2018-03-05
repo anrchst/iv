@@ -4,8 +4,10 @@ void handle_command(const std::string &command)
 	std::string arg0, arg1;
 	args >> arg0;
 	if (command[0] == '!') {
-		std::system(command.c_str() + 1);
-		return;
+		int c = std::system(command.c_str() + 1);
+		std::ostringstream o;
+		o << command.c_str() + 1 << " return code: " << c;
+		throw std::runtime_error(o.str());
 	}
 	if (arg0 == "q" || arg0 == "quit") {
 		exit(0);
