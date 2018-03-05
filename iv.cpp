@@ -330,12 +330,8 @@ void handle_key()
 	} while (false);
 }
 
-bool quit_on_sigint = false;
-
 void sigint_handler(int)
 {
-	if (quit_on_sigint)
-		std::exit(0);
 	mode = mode_type::NORMAL;
 	win.update();
 }
@@ -350,16 +346,10 @@ int main(int argc, char **argv)
 		std::cerr << "Usage: " << argv[0] << " [file]" << std::endl;
 		return 1;
 	} else if (argc < 2){
-		wprintw(win.file, "IV -- simple vi clone");
+		std::ostringstream hello;
+		hello << "IV -- simple vi clone; sizeof(tree_node) = " << sizeof(buffer::tree_node_type);
+		wprintw(win.file, hello.str().c_str());
 		win.update_status();
-	} else if (argv[1] == std::string("--dumpkeys")) {
-		quit_on_sigint = true;
-		while (true) {
-			int c = win.input();
-			wprintw(stdscr, "%d %s\n", c, key_name(c));
-			wrefresh(stdscr);
-		}
-		return 0;
 	} else {
 		buf.o(argv[1]);
 		win.update();

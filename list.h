@@ -508,6 +508,7 @@ class list
 {
 	internal::tree_head<T,StatTag> *head;
 public:
+	typedef internal::tree<T,StatTag> tree_node_type;
 	typedef list_const_iterator<T,StatTag> const_iterator;
 	typedef list_iterator<T,StatTag> iterator;
 
