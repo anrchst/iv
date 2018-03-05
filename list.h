@@ -86,13 +86,13 @@ struct tree : public tree_base<T,StatTag>
 		size_(this->l->size() + 1 + this->r->size())
 	{
 		if (this->l) {
-			if (this->l->p)
-				this->l->pointer() = nullptr;
+			//if (this->l->p)
+				//this->l->pointer() = nullptr;
 			this->l->p = this;
 		}
 		if (this->r) {
-			if (this->r->p)
-				this->r->pointer() = nullptr;
+			//if (this->r->p)
+				//this->r->pointer() = nullptr;
 			this->r->p = this;
 		}
 	}
@@ -170,6 +170,7 @@ void tree_base<T,StatTag>::resurrect()
 template <class T, class StatTag>
 tree<T,StatTag> *tree<T,StatTag>::balance(tree<T,StatTag> *l, const T &v, tree<T,StatTag> *r)
 {
+	//std::cout << "* balance: " << l->str() << " " << v << " " << r->str() << std::endl; 
 	if (l->height() > r->height() + 2) {
 		if (l->l->height() >= l->r->height()) {
 			auto right = new tree(l->r, v, r);
@@ -184,8 +185,8 @@ tree<T,StatTag> *tree<T,StatTag>::balance(tree<T,StatTag> *l, const T &v, tree<T
 			auto left = new tree(l, v, r->l);
 			return new tree(left, r->v, r->r);
 		} else {
-			auto right = new tree(r->l->r, l->v, r->r);
 			auto left = new tree(l, v, r->l->l);
+			auto right = new tree(r->l->r, r->v, r->r);
 			return new tree(left, r->l->v, right);
 		}
 	} else
@@ -213,13 +214,16 @@ tree<T,StatTag> *tree<T,StatTag>::add_max(const T &x, tree<T,StatTag> *&inserted
 template <class T, class StatTag>
 tree<T,StatTag> *tree<T,StatTag>::insert(tree<T,StatTag> *before, const T &x, tree<T,StatTag> *&inserted)
 {
+	/*if (size() == 10)
+		std::cout << "*insert " << this->str() << " " << before->l->str() << " " << x << std::endl;
+		*/
 	return replace(before, before->l, before->l->add_max(x, inserted));
 }
 
 template <class T, class StatTag>
 tree<T,StatTag> *tree<T,StatTag>::replace(tree<T,StatTag> *srcparent, tree<T,StatTag> * const &src, tree<T,StatTag> *dst)
 {
-	std::cout << "* replace: " << this << "@" << this->str() << "(" << this->l->str() << ":" << this->r->str() << ") " << srcparent->str() << " " << src->str() << " " << dst->str() << std::endl;
+	//std::cout << "* replace: " << this << "@" << this->str() << "(" << this->l->str() << ":" << this->r->str() << ") " << srcparent->str() << " " << src->str() << " " << dst->str() << std::endl;
 	if (this == src) {
 		//dst->p = srcparent;
 		return dst;
@@ -237,7 +241,7 @@ tree<T,StatTag> *tree<T,StatTag>::replace(tree<T,StatTag> *srcparent, tree<T,Sta
 template <class T, class StatTag>
 tree<T,StatTag> *tree<T,StatTag>::join(tree<T,StatTag> *l, const T &v, tree<T,StatTag> *r)
 {
-	std::cout << "* join: " << l->str() << " " << v << " " << r->str() << std::endl;
+	//std::cout << "* join: " << l->str() << " " << v << " " << r->str() << std::endl;
 	if (l == nullptr)
 		return r->add_min(v);
 	else if (r == nullptr)
