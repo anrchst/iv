@@ -125,6 +125,20 @@ void handle_command(const std::string &command)
 			buf.marks["_"]++;
 		mode = mode_type::INSERT;
 		win.update();
+	} else if (arg0 == "n_o") {
+		auto cline = buf.line(buf.cline());
+		buf.marks["_"] = cline + buf.cline_size() + (-1) - buf.begin();
+		buf.insert('\n');
+		buf.marks["_"]--;
+		mode = mode_type::INSERT;
+		win.update();
+	} else if (arg0 == "n_O") {
+		auto cline = buf.line(buf.cline());
+		buf.marks["_"] = cline - buf.begin();
+		buf.insert('\n');
+		buf.marks["_"]--;
+		mode = mode_type::INSERT;
+		win.update();
 	} else if (arg0 == "n_x") {
 		buf.erase();
 		win.update();

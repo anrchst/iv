@@ -34,5 +34,7 @@ nmap('i', "n_i");
 nmap('a', "n_a");
 nmap('I', "n_I");
 nmap('A', "n_A");
+nmap('o', "n_o");
+nmap('O', "n_O");
 
 nmap('x', "n_x");
