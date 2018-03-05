@@ -12,4 +12,7 @@ test: test1
 test1: test1.cpp list.h text.h Makefile
 	g++ ${CFLAGS} -o $@ test1.cpp
 
-.PHONY: test
+clean:
+	rm iv iv.opt test1
+
+.PHONY: test clean
