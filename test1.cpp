@@ -34,4 +34,9 @@ int main(int argc, char **argv)
 	assert(*j++ == 'i');
 	assert(*j++ == 'j');
 	assert(j == t.end());
+	t.marks["_"] = 3;
+	for (int i = 0; i < std::atoi(argv[1]); i++, j++) {
+		t.erase();
+	}
+	std::cout << t.str() << std::endl;
 }

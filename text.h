@@ -39,12 +39,12 @@ struct text : public iv::list<T, returns_tag<T>>
 
 	void erase()
 	{
-		/*int cursor = marks["_"];
+		int cursor = marks["_"];
 		parent_type::erase(begin() + cursor);
 		for (auto m : marks) {
 			if (m.second > cursor)
 				m.second--;
-		}*/
+		}
 	}
 
 	int lines() const
@@ -109,6 +109,14 @@ struct text : public iv::list<T, returns_tag<T>>
 				break;
 			}
 		}
+	}
+
+	std::string str() const
+	{
+		std::string ret;
+		for (const_iterator i = begin(); i != end(); ++i)
+			ret.push_back(*i);
+		return ret;
 	}
 };
 

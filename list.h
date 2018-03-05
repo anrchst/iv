@@ -101,7 +101,36 @@ struct tree : public tree_base<T,StatTag>
 	tree *add_max(const T &x, tree *&inserted);
 	tree *add_min(const T &x) { tree *inserted; return this->add_min(x, inserted); }
 	tree *add_max(const T &x) { tree *inserted; return this->add_max(x, inserted); }
+	T min() {
+		assert(this != nullptr);
+		tree *i = this;
+		while (i->l != nullptr)
+			i = i->l;
+		return i->v;
+	}
+	T max() {
+		assert(this != nullptr);
+		tree *i = this;
+		while (i->r != nullptr)
+			i = i->r;
+		return i->v;
+	}
+	tree *remove_min()
+	{
+		if (this->l == nullptr)
+			return this->r;
+		else
+			return balance(this->l->remove_min(), this->v, this->r);
+	}
+	tree *remove_max()
+	{
+		if (this->r == nullptr)
+			return this->l;
+		else
+			return balance(this->l, this->v, this->r->remove_max());
+	}
 	tree *insert(tree *before, const T &x, tree *&inserted);
+	tree *erase(tree *it);
 	tree *replace(tree *srcparent, tree * const &src, tree *dst);
 	tree *&pointer() {
 		if (this == this->p->l)
@@ -119,6 +148,7 @@ struct tree : public tree_base<T,StatTag>
 protected:
 	static tree *join(tree *l, const T &v, tree *r);
 	static tree *balance(tree *l, const T &v, tree *r);
+	static tree *merge(tree *l, tree *r);
 };
 
 template <class T, class StatTag>
@@ -193,6 +223,18 @@ tree<T,StatTag> *tree<T,StatTag>::balance(tree<T,StatTag> *l, const T &v, tree<T
 }
 
 template <class T, class StatTag>
+tree<T,StatTag> *tree<T,StatTag>::merge(tree<T,StatTag> *l, tree<T,StatTag> *r)
+{
+	if (l == nullptr)
+		return r;
+	else if (r == nullptr)
+		return l;
+	else
+		return balance(l, r->min(), r->remove_min());
+}
+
+
+template <class T, class StatTag>
 tree<T,StatTag> *tree<T,StatTag>::add_min(const T &x, tree<T,StatTag> *&inserted)
 {
 	if (this == nullptr)
@@ -214,6 +256,22 @@ template <class T, class StatTag>
 tree<T,StatTag> *tree<T,StatTag>::insert(tree<T,StatTag> *before, const T &x, tree<T,StatTag> *&inserted)
 {
 	return replace(before, before->l, before->l->add_max(x, inserted));
+}
+
+template <class T, class StatTag>
+tree<T,StatTag> *tree<T,StatTag>::erase(tree<T,StatTag> *it)
+{
+	if (it == this)
+		return merge(this->l, this->r);
+	tree *i = it;
+	while (i->p != this)
+		i = static_cast<internal::tree<T, StatTag> *>(i->p);
+	if (i == this->l) {
+		return balance(this->l->erase(it), this->v, this->r);
+	} else if (i == this->r) {
+		return balance(this->l, this->v, this->r->erase(it));
+	} else
+		throw std::runtime_error("no child");
 }
 
 template <class T, class StatTag>
@@ -508,6 +566,12 @@ public:
 		}
 		head->l->p = head;
 		return iterator(const_iterator(this, inserted));
+	}
+
+	void erase(iterator it)
+	{
+		head->l = head->r = head->root()->erase(static_cast<internal::tree<T, StatTag> *>(it.get()));
+		head->l->p = head;
 	}
 
 	int index(const_iterator i) const
