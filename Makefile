@@ -1,5 +1,7 @@
 CFLAGS=-g -fno-delete-null-pointer-checks -Wall -std=c++11 -Wno-nonnull-compare
 
+all: iv iv.opt
+
 iv: Makefile iv.cpp config.cpp handle_command.cpp list.h text.h
 	g++ ${CFLAGS} -g -o $@ `pkg-config --cflags --libs ncursesw`  iv.cpp -pg -no-pie
 

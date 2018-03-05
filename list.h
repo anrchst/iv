@@ -291,8 +291,6 @@ tree<T,StatTag> *tree<T,StatTag>::replace(tree<T,StatTag> *srcparent, tree<T,Sta
 	if (this == src) {
 		return dst;
 	}
-	// no head here plz
-	assert(srcparent->l != src || srcparent->r != src);
 	if (&src == &srcparent->r)
 		return replace(static_cast<tree<T,StatTag> *>(srcparent->p), srcparent->pointer(), join(srcparent->l, srcparent->v, dst));
 	else if (&src == &srcparent->l)

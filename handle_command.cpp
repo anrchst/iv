@@ -3,6 +3,10 @@ void handle_command(const std::string &command)
 	std::istringstream args(command);
 	std::string arg0, arg1;
 	args >> arg0;
+	if (command[0] == '!') {
+		std::system(command.c_str() + 1);
+		return;
+	}
 	if (arg0 == "q" || arg0 == "quit") {
 		exit(0);
 	} else if (arg0 == "r") {
@@ -59,11 +63,9 @@ void handle_command(const std::string &command)
 			buf.adjust_start();
 		}
 		win.update_file();
-	} else if (arg0 == "0") {
-		buf.marks["_"] = 0;
-		win.update_file();
-	} else if (arg0 == "100") {
-		buf.marks["_"] = buf.line(100) - buf.begin();
+	} else if (std::isdigit(arg0[0])) {
+		buf.marks["_"] = buf.line(std::atoi(arg0.c_str())) - buf.begin();
+		buf.adjust_start();
 		win.update_file();
 	} else if (arg0 == "refresh") {
 		win.update();

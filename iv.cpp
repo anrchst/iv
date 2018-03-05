@@ -1,6 +1,6 @@
 #include <algorithm>
 #include <cctype> /* isprint */
-#include <cstdlib> /* exit() */
+#include <cstdlib> /* system(), exit() */
 #include <fstream>
 #include <functional>
 #include <initializer_list>
@@ -300,6 +300,14 @@ key_bindings normal_bindings({});
 key_bindings insert_bindings({});
 key_bindings command_bindings({});
 
+bool is_viewable(char c) {
+	if (std::isprint(c))
+		return true;
+	if (c == '\t' || c == '\n')
+		return true;
+	return false;
+}
+
 void handle_key()
 {
 	int c = win.input();
@@ -312,15 +320,14 @@ void handle_key()
 			break;
 		if (mode == mode_type::COMMAND && command_bindings.handle(c))
 			break;
-		if (mode == mode_type::INSERT && std::isprint(c)) {
+		if (mode == mode_type::INSERT && is_viewable(c)) {
 			buf.insert(c);
 			win.update_file();
 			break;
 		}
 		if (mode == mode_type::COMMAND && std::isprint(c)) {
-			char string[] = {(char)c, '\0'};
 			win.command.push_back(c);
-			wprintw(win.cmdline, string);
+			waddch(win.cmdline, c);
 			wrefresh(win.cmdline);
 			break;
 		}
