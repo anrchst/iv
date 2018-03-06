@@ -163,7 +163,10 @@ enum class mode_type {
 
 struct screen_initializer
 {
-	screen_initializer() { initscr(); }
+	screen_initializer() {
+		setlocale(LC_CTYPE, "");
+		initscr();
+	}
 };
 
 struct Window : public screen_initializer
