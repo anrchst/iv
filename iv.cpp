@@ -165,7 +165,6 @@ enum class mode_type {
 struct screen_initializer
 {
 	screen_initializer() {
-		std::cerr << "Locale set" << std::endl;
 		setlocale(LC_CTYPE, "");
 		initscr();
 	}
