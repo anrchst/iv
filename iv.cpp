@@ -307,7 +307,7 @@ key_bindings insert_bindings({});
 key_bindings command_bindings({});
 
 bool is_viewable(wchar_t c) {
-	if (std::isprint(c))
+	if (std::iswprint(c))
 		return true;
 	if (c == '\t' || c == '\n')
 		return true;
