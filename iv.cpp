@@ -23,9 +23,9 @@
 
 const int tab_size = 8;
 
-struct buffer : public text<wchar_t>
+struct buffer : public text<wint_t>
 {
-	typedef text<wchar_t> parent_type;
+	typedef text<wint_t> parent_type;
 	std::string filename;
 
 	buffer() { marks[""] = marks["_"] = 0; }
@@ -113,7 +113,7 @@ struct buffer : public text<wchar_t>
 	void write(std::ostream &stream)
 	{
 		for (auto c : *this)
-			stream << c;
+			stream << (wchar_t)c;
 	}
 
 	void r(std::string _filename = std::string())
@@ -277,14 +277,14 @@ void Window::activate_window()
 
 struct key_bindings
 {
-	typedef std::pair<const wchar_t, std::function<void ()>> binding;
+	typedef std::pair<const wint_t, std::function<void ()>> binding;
 	std::map<binding::first_type, binding::second_type> bindings;
 	key_bindings(const std::initializer_list<binding> &_bindings) : bindings(_bindings) { }
-	bool handle(wchar_t key);
-	void add_command_binding(wchar_t key, const char *cmd);
+	bool handle(wint_t key);
+	void add_command_binding(wint_t key, const char *cmd);
 };
 
-bool key_bindings::handle(wchar_t key)
+bool key_bindings::handle(wint_t key)
 {
 	bool ret = bindings.count(key);
 	if (ret)
@@ -292,7 +292,7 @@ bool key_bindings::handle(wchar_t key)
 	return ret;
 }
 
-void key_bindings::add_command_binding(wchar_t key, const char *cmd)
+void key_bindings::add_command_binding(wint_t key, const char *cmd)
 {
 	bindings.emplace(key, std::bind(handle_command, cmd));
 }
@@ -303,7 +303,7 @@ key_bindings normal_bindings({});
 key_bindings insert_bindings({});
 key_bindings command_bindings({});
 
-bool is_viewable(wchar_t c) {
+bool is_viewable(wint_t c) {
 	if (std::isprint(c))
 		return true;
 	if (c == '\t' || c == '\n')
@@ -313,7 +313,7 @@ bool is_viewable(wchar_t c) {
 
 void handle_key()
 {
-	wchar_t c = win.input();
+	wint_t c = win.input();
 	do {
 		if (any_bindings.handle(c))
 			break;
