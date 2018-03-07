@@ -105,22 +105,21 @@ struct buffer : public text<wint_t>
 			marks["_"] = start() - begin();
 	}
 
-	void read(std::istream &stream)
+	void read(std::wistream &stream)
 	{
-		assign(std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>());
+		assign(std::istreambuf_iterator<wchar_t>(stream), std::istreambuf_iterator<wchar_t>());
 	}
 
-	void write(std::ostream &stream)
+	void write(std::wostream &stream)
 	{
-		for (auto c : *this)
-			stream << (wchar_t)c;
+		std::copy(begin(), end(), std::ostreambuf_iterator<wchar_t>(stream));
 	}
 
 	void r(std::string _filename = std::string())
 	{
 		if (_filename.empty())
 			_filename = filename;
-		std::ifstream stream(_filename);
+		std::wifstream stream(_filename);
 		stream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 		read(stream);
 	}
@@ -129,7 +128,7 @@ struct buffer : public text<wint_t>
 	{
 		if (_filename.empty())
 			throw std::invalid_argument(":o needs an argument");
-		std::ifstream stream(_filename);
+		std::wifstream stream(_filename);
 		stream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 		read(stream);
 		filename = _filename;
@@ -139,7 +138,7 @@ struct buffer : public text<wint_t>
 	{
 		if (_filename.empty())
 			_filename = filename;
-		std::ofstream stream(_filename);
+		std::wofstream stream(_filename);
 		stream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 		write(stream);
 	}
@@ -148,7 +147,7 @@ struct buffer : public text<wint_t>
 	{
 		if (_filename.empty())
 			throw std::invalid_argument(":saveas needs an argument");
-		std::ofstream stream(_filename);
+		std::wofstream stream(_filename);
 		stream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 		write(stream);
 		filename = _filename;
