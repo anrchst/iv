@@ -227,7 +227,9 @@ void Window::update_file()
 	wclear(file);
 	wmove(file, 0, 0);
 	for (buffer::const_iterator i = buf.line(buf.sline()); i != buf.begin() + buf.marks["_"]; ++i) {
-		waddch(file, *i);
+		cchar_t c = {};
+		c.chars[0] = *i;
+		wadd_wch(file, &c);
 		if (getcury(file) >= buf.file_lines() - 1 && getcurx(file) >= COLS - 1)
 			break;
 	}
