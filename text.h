@@ -100,6 +100,7 @@ struct text : public iv::list<T, returns_tag<T>>
 	{
 		std::deque<char> d(begin, end);
 		iv::list<T, returns_tag<T>>::operator =(iv::list<T, returns_tag<T>>(d.begin(), d.end()));
+		marks[""] = marks["_"] = 0;
 	}
 
 	std::string str() const
