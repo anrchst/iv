@@ -1,3 +1,7 @@
+/* Copyright (C) Anton Novikov, 2018 
+ * distributed by terms of GPLv3
+ * mrk, I love u
+ */
 #include <algorithm>
 #include <cctype> /* isprint */
 #include <cstdlib> /* system(), exit() */
