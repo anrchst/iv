@@ -423,8 +423,7 @@ public:
 	}
 	list_const_iterator &operator +=(int n)
 	{
-		for (int i = 0; i < n; i++)
-			++*this;
+		*this = lst->iter_at(lst->index(*this) + n);
 		return *this;
 	}
 	int operator -(list_const_iterator other)
@@ -606,6 +605,22 @@ public:
 		}
 		return ret;
 	}
+
+	const_iterator iter_at(int index) const
+        {
+                if (root().size() <= index)
+                        return end();
+                const_iterator ret = root();
+                while (ret.left().size() != index) {
+                        if (ret.left().size() < index) {
+                                index -= ret.left().size() + 1;
+                                ret = ret.right();
+                        } else
+                                ret = ret.left();
+                }
+                return ret;
+        }
+
 
 	int size() const
 	{
