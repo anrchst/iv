@@ -320,7 +320,7 @@ template <class T, class StatTag>
 class list;
 
 template <class T, class StatTag>
-class list_const_iterator
+class list_const_iterator : public std::iterator<std::random_access_iterator_tag, T>
 {
 	const list<T,StatTag> *lst;
 	const internal::tree_base<T,StatTag> *ptr;
